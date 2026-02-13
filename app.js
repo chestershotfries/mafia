@@ -10,6 +10,7 @@ let currentFormals = null;
 let knownPlayers = [];
 let nightActions = [];
 let vigiHasShot = false;
+let dayVotes = {};
 
 const $ = (sel) => document.querySelector(sel);
 const $$ = (sel) => document.querySelectorAll(sel);
@@ -540,10 +541,12 @@ function acceptAssignments() {
 
 	nightActions = [];
 	vigiHasShot = false;
+	dayVotes = {};
 
 	$('#role-reveal-pre').textContent = generateRoleReveal();
 	$('#nights-container').innerHTML = '';
 	addNightSection(0);
+	updateNightButtons();
 
 	showPanel('panel-game');
 }
@@ -742,6 +745,7 @@ function newGame() {
 	currentFormals = null;
 	nightActions = [];
 	vigiHasShot = false;
+	dayVotes = {};
 	$('#names-input').value = '';
 	$('#assignments-display').classList.add('hidden');
 	$('#nights-container').innerHTML = '';
@@ -871,8 +875,6 @@ function generateNightOutput(nightData) {
 
 	if (nightData.medicSave) {
 		output += `medic: ||saved ${nightData.medicSave}||\n`;
-	} else {
-		output += `medic: ||no save||\n`;
 	}
 
 	if (nightData.vigiTarget) {
@@ -898,28 +900,6 @@ function updateNightOutput(nightNum) {
 	}
 }
 
-function handleVigiChange(nightIndex, value) {
-	const nd = nightActions[nightIndex];
-	nd.vigiTarget = value;
-	nd.vigiShot = !!value;
-	vigiHasShot = nightActions.some((n) => n.vigiShot);
-
-	$$('.vigi-select').forEach((sel) => {
-		const selNightNum = parseInt(sel.dataset.night);
-		const selND = nightActions[selNightNum];
-		if (!selND) return;
-
-		sel.disabled = vigiHasShot && !selND.vigiShot;
-
-		const spentEl = $(`#vigi-spent-${selNightNum}`);
-		if (spentEl) {
-			spentEl.classList.toggle('hidden', !vigiHasShot || selND.vigiShot);
-		}
-	});
-
-	updateNightOutput(nd.night);
-}
-
 function handleCopyClick(e) {
 	const btn = e.target.closest('.btn-copy');
 	if (!btn) return;
@@ -938,9 +918,228 @@ function handleCopyClick(e) {
 	});
 }
 
+function updateNightButtons() {
+	const container = $('#night-buttons');
+	container.innerHTML = '';
+	for (let i = 0; i <= 7; i++) {
+		const btn = document.createElement('button');
+		btn.className = 'btn-night';
+		btn.textContent = `N${i}`;
+		btn.dataset.night = i;
+
+		if (i < nightActions.length) {
+			btn.disabled = true;
+			btn.classList.add('used');
+		} else if (i === nightActions.length) {
+			btn.addEventListener('click', () => {
+				addNightSection(i);
+				updateNightButtons();
+			});
+		} else {
+			btn.disabled = true;
+		}
+
+		container.appendChild(btn);
+	}
+}
+
+function addNightKills(deadSet, nightIndex) {
+	const nd = nightActions[nightIndex];
+	if (!nd) return;
+	for (const kill of nd.mafKills) {
+		if (kill) deadSet.add(kill);
+	}
+	if (nd.vigiTarget) deadSet.add(nd.vigiTarget);
+}
+
+function getDeadBeforeNight(n) {
+	const dead = new Set();
+	for (let i = 0; i < n; i++) addNightKills(dead, i);
+	for (let d = 1; d <= n; d++) {
+		if (dayVotes[d]) dead.add(dayVotes[d]);
+	}
+	return dead;
+}
+
+function getDeadBeforeDay(d) {
+	const dead = new Set();
+	for (let i = 0; i < d; i++) addNightKills(dead, i);
+	for (let dd = 1; dd < d; dd++) {
+		if (dayVotes[dd]) dead.add(dayVotes[dd]);
+	}
+	return dead;
+}
+
+function refreshConstraints() {
+	const cop = currentAssignments.find((a) => a.position === 4);
+	const medic = currentAssignments.find((a) => a.position === 5);
+	const vigi = currentAssignments.find((a) => a.position === 6);
+	vigiHasShot = nightActions.some((nd) => nd.vigiShot);
+
+	for (let n = 0; n < nightActions.length; n++) {
+		const nd = nightActions[n];
+		const dead = getDeadBeforeNight(n);
+
+		// Update day vote select (Day n precedes Night n)
+		if (n > 0) {
+			const daySel = $(`.day-vote-select[data-day="${n}"]`);
+			if (daySel) {
+				const dayDead = getDeadBeforeDay(n);
+				daySel.querySelectorAll('option').forEach((opt) => {
+					opt.disabled = opt.value !== '' && dayDead.has(opt.value);
+				});
+				if (dayDead.has(daySel.value)) {
+					daySel.value = '';
+					dayVotes[n] = '';
+				}
+			}
+		}
+
+		// Collect all night selects for this night
+		const allSels = [
+			...$$(`[data-night="${n}"].maf-select`),
+			$(`.cop-select[data-night="${n}"]`),
+			$(`.medic-select[data-night="${n}"]`),
+			$(`.vigi-select[data-night="${n}"]`),
+		].filter(Boolean);
+
+		// Enable all options first
+		for (const sel of allSels) {
+			sel.disabled = false;
+			sel.querySelectorAll('option').forEach((opt) => {
+				opt.disabled = false;
+			});
+		}
+
+		// Disable dead players in all selects
+		for (const sel of allSels) {
+			sel.querySelectorAll('option').forEach((opt) => {
+				if (opt.value !== '' && dead.has(opt.value)) opt.disabled = true;
+			});
+		}
+
+		// Cop no-repeat constraint
+		const copSel = $(`.cop-select[data-night="${n}"]`);
+		if (copSel) {
+			const usedChecks = new Set();
+			for (let j = 0; j < n; j++) {
+				if (nightActions[j].copCheck) usedChecks.add(nightActions[j].copCheck);
+			}
+			copSel.querySelectorAll('option').forEach((opt) => {
+				if (opt.value !== '' && usedChecks.has(opt.value)) opt.disabled = true;
+			});
+		}
+
+		// Medic no-consecutive constraint
+		const medicSel = $(`.medic-select[data-night="${n}"]`);
+		if (medicSel) {
+			const prevSave = n > 0 ? nightActions[n - 1].medicSave : '';
+			if (prevSave) {
+				medicSel.querySelectorAll('option').forEach((opt) => {
+					if (opt.value === prevSave) opt.disabled = true;
+				});
+			}
+		}
+
+		// Role holder death — disable entire select if holder is dead
+		if (cop && !cop.is_ghost && dead.has(cop.name) && copSel) {
+			copSel.disabled = true;
+			copSel.value = '';
+			nd.copCheck = '';
+		}
+		if (medic && !medic.is_ghost && dead.has(medic.name) && medicSel) {
+			medicSel.disabled = true;
+			medicSel.value = '';
+			nd.medicSave = '';
+		}
+		const vigiSel = $(`.vigi-select[data-night="${n}"]`);
+		if (vigi && !vigi.is_ghost && dead.has(vigi.name) && vigiSel) {
+			vigiSel.disabled = true;
+			vigiSel.value = '';
+			nd.vigiTarget = '';
+			nd.vigiShot = false;
+		}
+
+		// Vigi one-shot constraint
+		if (vigiSel && !vigiSel.disabled) {
+			if (vigiHasShot && !nd.vigiShot) {
+				vigiSel.disabled = true;
+			}
+		}
+		const spentEl = $(`#vigi-spent-${n}`);
+		if (spentEl) {
+			const showSpent = vigiSel && vigiSel.disabled && !(vigi && dead.has(vigi.name));
+			spentEl.classList.toggle('hidden', !showSpent);
+		}
+
+		// Reset invalid selections (current value is disabled)
+		for (const sel of allSels) {
+			if (sel.disabled) continue;
+			const chosen = sel.querySelector(`option[value="${CSS.escape(sel.value)}"]`);
+			if (chosen && chosen.disabled) {
+				sel.value = '';
+				// Sync back to data model
+				if (sel.classList.contains('maf-select')) {
+					nd.mafKills[parseInt(sel.dataset.kill)] = '';
+				} else if (sel.classList.contains('cop-select')) {
+					nd.copCheck = '';
+				} else if (sel.classList.contains('medic-select')) {
+					nd.medicSave = '';
+				} else if (sel.classList.contains('vigi-select')) {
+					nd.vigiTarget = '';
+					nd.vigiShot = false;
+				}
+			}
+		}
+
+		updateNightOutput(n);
+	}
+
+	// Recalculate vigiHasShot after potential resets
+	vigiHasShot = nightActions.some((nd) => nd.vigiShot);
+	recalculateCopResults(0);
+}
+
+function addDaySection(dayNum) {
+	const allReal = currentAssignments.filter((a) => !a.is_ghost);
+	dayVotes[dayNum] = '';
+
+	const section = document.createElement('div');
+	section.className = 'day-section';
+	section.dataset.day = dayNum;
+
+	const heading = document.createElement('h3');
+	heading.textContent = `Day ${dayNum}`;
+	section.appendChild(heading);
+
+	const label = document.createElement('label');
+	label.className = 'night-label';
+	label.textContent = 'Voted Out';
+	section.appendChild(label);
+
+	const sel = createPlayerSelect(allReal, 'No one');
+	sel.classList.add('day-vote-select');
+	sel.dataset.day = dayNum;
+	sel.addEventListener('change', () => {
+		dayVotes[dayNum] = sel.value;
+		refreshConstraints();
+	});
+	section.appendChild(sel);
+
+	$('#nights-container').appendChild(section);
+}
+
 function addNightSection(nightNum) {
 	const nonMafia = currentAssignments.filter((a) => !a.is_ghost && a.role !== 'Mafia');
 	const allReal = currentAssignments.filter((a) => !a.is_ghost);
+	const copTargets = allReal.filter((a) => a.position !== 4);
+	const medicTargets = allReal.filter((a) => a.position !== 5);
+	const vigiTargets = allReal.filter((a) => a.position !== 6);
+
+	// Insert day section before night (except N0)
+	if (nightNum > 0) {
+		addDaySection(nightNum);
+	}
 
 	const nightData = {
 		night: nightNum,
@@ -968,9 +1167,12 @@ function addNightSection(nightNum) {
 	section.appendChild(mafLabel1);
 
 	const mafSel1 = createPlayerSelect(nonMafia, 'Select target...');
+	mafSel1.classList.add('maf-select');
+	mafSel1.dataset.night = nightNum;
+	mafSel1.dataset.kill = '0';
 	mafSel1.addEventListener('change', () => {
 		nightData.mafKills[0] = mafSel1.value;
-		updateNightOutput(nightNum);
+		refreshConstraints();
 	});
 	section.appendChild(mafSel1);
 
@@ -981,9 +1183,12 @@ function addNightSection(nightNum) {
 	section.appendChild(mafLabel2);
 
 	const mafSel2 = createPlayerSelect(nonMafia, 'No second kill');
+	mafSel2.classList.add('maf-select');
+	mafSel2.dataset.night = nightNum;
+	mafSel2.dataset.kill = '1';
 	mafSel2.addEventListener('change', () => {
 		nightData.mafKills[1] = mafSel2.value;
-		updateNightOutput(nightNum);
+		refreshConstraints();
 	});
 	section.appendChild(mafSel2);
 
@@ -996,10 +1201,12 @@ function addNightSection(nightNum) {
 	const copRow = document.createElement('div');
 	copRow.className = 'night-field-row';
 
-	const copSel = createPlayerSelect(allReal, 'Select target...');
+	const copSel = createPlayerSelect(copTargets, 'Select target...');
+	copSel.classList.add('cop-select');
+	copSel.dataset.night = nightNum;
 	copSel.addEventListener('change', () => {
 		nightData.copCheck = copSel.value;
-		recalculateCopResults(nightActions.indexOf(nightData));
+		refreshConstraints();
 	});
 	copRow.appendChild(copSel);
 
@@ -1016,10 +1223,12 @@ function addNightSection(nightNum) {
 	medicLabel.textContent = 'Medic Save';
 	section.appendChild(medicLabel);
 
-	const medicSel = createPlayerSelect(allReal, 'No save');
+	const medicSel = createPlayerSelect(medicTargets, 'Select target...');
+	medicSel.classList.add('medic-select');
+	medicSel.dataset.night = nightNum;
 	medicSel.addEventListener('change', () => {
 		nightData.medicSave = medicSel.value;
-		updateNightOutput(nightNum);
+		refreshConstraints();
 	});
 	section.appendChild(medicSel);
 
@@ -1032,11 +1241,13 @@ function addNightSection(nightNum) {
 	const vigiRow = document.createElement('div');
 	vigiRow.className = 'night-field-row';
 
-	const vigiSel = createPlayerSelect(allReal, 'Holster');
+	const vigiSel = createPlayerSelect(vigiTargets, 'Holster');
 	vigiSel.classList.add('vigi-select');
 	vigiSel.dataset.night = nightNum;
 	vigiSel.addEventListener('change', () => {
-		handleVigiChange(nightActions.indexOf(nightData), vigiSel.value);
+		nightData.vigiTarget = vigiSel.value;
+		nightData.vigiShot = !!vigiSel.value;
+		refreshConstraints();
 	});
 	vigiRow.appendChild(vigiSel);
 
@@ -1046,28 +1257,23 @@ function addNightSection(nightNum) {
 	vigiSpent.textContent = 'Shot already used';
 	vigiRow.appendChild(vigiSpent);
 
-	if (vigiHasShot) {
-		vigiSel.disabled = true;
-		vigiSpent.classList.remove('hidden');
-	}
-
 	section.appendChild(vigiRow);
 
-	// RNGs
+	// RNGs (predetermined from formals)
+	const rngsCount = currentFormals && currentFormals[nightNum]
+		? currentFormals[nightNum].count
+		: 0;
+	nightData.rngs = rngsCount;
+
 	const rngsLabel = document.createElement('label');
 	rngsLabel.className = 'night-label';
 	rngsLabel.textContent = 'RNGs';
 	section.appendChild(rngsLabel);
 
-	const rngsInput = document.createElement('input');
-	rngsInput.type = 'number';
-	rngsInput.className = 'night-input';
-	rngsInput.placeholder = 'Number of RNGs';
-	rngsInput.addEventListener('input', () => {
-		nightData.rngs = rngsInput.value;
-		updateNightOutput(nightNum);
-	});
-	section.appendChild(rngsInput);
+	const rngsValue = document.createElement('span');
+	rngsValue.className = 'night-rngs';
+	rngsValue.textContent = rngsCount;
+	section.appendChild(rngsValue);
 
 	// Discord output block
 	const outputBlock = document.createElement('div');
@@ -1096,7 +1302,7 @@ function addNightSection(nightNum) {
 	section.appendChild(outputBlock);
 
 	$('#nights-container').appendChild(section);
-	updateNightOutput(nightNum);
+	refreshConstraints();
 }
 
 function continueToRecord() {
@@ -1129,7 +1335,6 @@ document.addEventListener('DOMContentLoaded', () => {
 	$('#btn-back').addEventListener('click', () => showPanel('panel-game'));
 	$('#btn-submit').addEventListener('click', submitResults);
 	$('#btn-new-game').addEventListener('click', newGame);
-	$('#btn-add-night').addEventListener('click', () => addNightSection(nightActions.length));
 	$('#btn-continue-record').addEventListener('click', continueToRecord);
 	$('.container').addEventListener('click', handleCopyClick);
 	$('#btn-undo-last')?.addEventListener('click', undoLastGame);
