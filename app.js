@@ -240,7 +240,10 @@ function findClosestPlayer(name) {
 	if (!knownPlayers.length) return null;
 	const lower = name.toLowerCase();
 
-	if (knownPlayers.some((p) => p.toLowerCase() === lower)) return null;
+	// For longer names, exact match means no suggestion needed.
+	// For short names (<=5 chars), skip this check — they may be
+	// abbreviations of a longer canonical player name.
+	if (name.length > 5 && knownPlayers.some((p) => p.toLowerCase() === lower)) return null;
 
 	const used = getUsedNames();
 	const candidates = knownPlayers.filter((p) => !used.has(p.toLowerCase()));
@@ -261,7 +264,10 @@ function findClosestPlayer(name) {
 		.filter((s) => s.score > 0)
 		.sort((a, b) => b.score - a.score);
 	if (scored.length === 1) return scored[0].name;
-	if (scored.length >= 2 && scored[0].score >= scored[1].score + 5) {
+	// Shorter names need less margin — 2-char abbreviations have little
+	// signal, so even a small lead is meaningful for a suggestion.
+	const margin = name.length <= 2 ? 1 : name.length <= 4 ? 3 : 5;
+	if (scored.length >= 2 && scored[0].score >= scored[1].score + margin) {
 		return scored[0].name;
 	}
 
@@ -315,12 +321,7 @@ function renderEditableAssignments() {
 			);
 			const suggestion = findClosestPlayer(a.name);
 
-			if (exactMatch) {
-				const badge = document.createElement('span');
-				badge.className = 'name-match-badge matched';
-				badge.textContent = 'matched';
-				li.appendChild(badge);
-			} else if (suggestion) {
+			if (suggestion) {
 				const sugBtn = document.createElement('button');
 				sugBtn.className = 'name-suggestion-btn';
 				sugBtn.innerHTML = `&rarr; ${suggestion}?`;
@@ -333,6 +334,11 @@ function renderEditableAssignments() {
 					showToast(`Renamed "${oldName}" to "${suggestion}"`, true);
 				});
 				li.appendChild(sugBtn);
+			} else if (exactMatch) {
+				const badge = document.createElement('span');
+				badge.className = 'name-match-badge matched';
+				badge.textContent = 'matched';
+				li.appendChild(badge);
 			} else {
 				const badge = document.createElement('span');
 				badge.className = 'name-match-badge new-player';
