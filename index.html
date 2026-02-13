@@ -32,7 +32,27 @@
       </div>
     </section>
 
-    <!-- Panel 2: Record Results -->
+    <!-- Panel 2: Game Panel -->
+    <section id="panel-game" class="panel hidden">
+      <h2>Game Panel</h2>
+
+      <div class="discord-block">
+        <div class="discord-header">
+          <span>Role Reveal</span>
+          <button class="btn-copy" data-target="role-reveal-pre">Copy</button>
+        </div>
+        <pre id="role-reveal-pre" class="discord-pre"></pre>
+      </div>
+
+      <div id="nights-container"></div>
+
+      <div class="button-row">
+        <button id="btn-add-night" class="btn btn-secondary">Add Night</button>
+        <button id="btn-continue-record" class="btn btn-primary">Continue to Record</button>
+      </div>
+    </section>
+
+    <!-- Panel 3: Record Results -->
     <section id="panel-record" class="panel hidden">
       <h2>Record Results</h2>
       <div id="locked-assignments">
@@ -64,7 +84,7 @@
       </div>
     </section>
 
-    <!-- Panel 3: Results & Verification -->
+    <!-- Panel 4: Results & Verification -->
     <section id="panel-results" class="panel hidden">
       <h2>Rating Changes</h2>
       <table id="results-table" class="results-table">

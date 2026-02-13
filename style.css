@@ -509,6 +509,145 @@ textarea:focus {
   color: var(--town-blue);
 }
 
+/* Discord codeblock */
+.discord-block {
+  background: #2b2d31;
+  border-radius: var(--radius);
+  margin: 1rem 0;
+  overflow: hidden;
+}
+
+.discord-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0.75rem;
+  background: #1e1f22;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.discord-pre {
+  padding: 0.75rem;
+  margin: 0;
+  font-family: 'Consolas', 'Monaco', monospace;
+  font-size: 0.85rem;
+  color: #dbdee1;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* Copy button */
+.btn-copy {
+  background: var(--surface-alt);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text);
+  font-size: 0.75rem;
+  padding: 0.2rem 0.5rem;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+
+.btn-copy:hover {
+  background: var(--border);
+}
+
+.btn-copy.copied {
+  background: var(--positive);
+  color: #fff;
+  border-color: var(--positive);
+}
+
+/* Night section */
+.night-section {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1rem;
+  margin: 1rem 0;
+}
+
+.night-section h3 {
+  margin-bottom: 0.75rem;
+}
+
+.night-label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin: 0.75rem 0 0.25rem;
+}
+
+.night-field-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.night-field-row .night-select {
+  flex: 1;
+}
+
+.night-select,
+.night-input {
+  width: 100%;
+  padding: 0.5rem;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-family: inherit;
+  font-size: 0.95rem;
+}
+
+.night-select:focus,
+.night-input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.night-select:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Cop result badge */
+.cop-result-badge {
+  font-size: 0.8rem;
+  font-weight: 700;
+  padding: 0.15rem 0.5rem;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+.cop-result-badge:empty {
+  display: none;
+}
+
+.cop-result-badge.same {
+  background: rgba(100, 181, 246, 0.2);
+  color: var(--town-blue);
+}
+
+.cop-result-badge.different {
+  background: rgba(233, 69, 96, 0.2);
+  color: var(--mafia-red);
+}
+
+/* Vigi spent */
+.vigi-spent {
+  font-size: 0.8rem;
+  font-style: italic;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.vigi-spent.hidden {
+  display: none;
+}
+
 .hidden {
   display: none;
 }

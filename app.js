@@ -8,6 +8,8 @@ const GHOST_NAME = 'Ghost';
 let currentAssignments = null;
 let currentFormals = null;
 let knownPlayers = [];
+let nightActions = [];
+let vigiHasShot = false;
 
 const $ = (sel) => document.querySelector(sel);
 const $$ = (sel) => document.querySelectorAll(sel);
@@ -535,15 +537,15 @@ function autoMatchNames() {
 
 function acceptAssignments() {
 	autoMatchNames();
-	renderEditableAssignments();
-	if (currentFormals) renderFormals(currentFormals, $('#locked-formals'));
-	rebuildNight0Checks();
 
-	$$('input[name="winner"]').forEach((r) => (r.checked = false));
-	$('#btn-submit').disabled = true;
-	updateRatedPreview();
+	nightActions = [];
+	vigiHasShot = false;
 
-	showPanel('panel-record');
+	$('#role-reveal-pre').textContent = generateRoleReveal();
+	$('#nights-container').innerHTML = '';
+	addNightSection(0);
+
+	showPanel('panel-game');
 }
 
 // --- Update rated preview ---
@@ -738,8 +740,11 @@ async function undoLastGame() {
 function newGame() {
 	currentAssignments = null;
 	currentFormals = null;
+	nightActions = [];
+	vigiHasShot = false;
 	$('#names-input').value = '';
 	$('#assignments-display').classList.add('hidden');
+	$('#nights-container').innerHTML = '';
 	countNames();
 	showPanel('panel-randomize');
 }
@@ -755,6 +760,365 @@ async function loadPlayerNames() {
 	}
 }
 
+// --- Night Actions & Game Panel ---
+
+function getAlignment(name) {
+	const a = currentAssignments.find((p) => p.name === name);
+	return a ? a.role : null;
+}
+
+function generateRoleReveal() {
+	const mafia = currentAssignments.filter((a) => a.position <= 3).map((a) => a.name);
+	const cop = currentAssignments.find((a) => a.position === 4);
+	const medic = currentAssignments.find((a) => a.position === 5);
+	const vigi = currentAssignments.find((a) => a.position === 6);
+
+	return [
+		`Mafia: ||${mafia.join(', ')}||`,
+		`Cop: ||${cop.name}||`,
+		`Medic: ||${medic.name}||`,
+		`Vigi: ||${vigi.name}||`,
+	].join('\n');
+}
+
+function createPlayerSelect(players, placeholder) {
+	const sel = document.createElement('select');
+	sel.className = 'night-select';
+
+	const defaultOpt = document.createElement('option');
+	defaultOpt.value = '';
+	defaultOpt.textContent = placeholder;
+	sel.appendChild(defaultOpt);
+
+	for (const p of players) {
+		const opt = document.createElement('option');
+		opt.value = p.name;
+		opt.textContent = p.name;
+		sel.appendChild(opt);
+	}
+
+	return sel;
+}
+
+function calculateCopResult(target, nightIndex) {
+	if (nightIndex === 0 || !target) return null;
+
+	let prevCheck = null;
+	for (let i = nightIndex - 1; i >= 0; i--) {
+		if (nightActions[i] && nightActions[i].copCheck) {
+			prevCheck = nightActions[i].copCheck;
+			break;
+		}
+	}
+	if (!prevCheck) return null;
+
+	const targetAlignment = getAlignment(target);
+	const prevAlignment = getAlignment(prevCheck);
+	if (!targetAlignment || !prevAlignment) return null;
+
+	return targetAlignment === prevAlignment ? 'SAME' : 'DIFFERENT';
+}
+
+function updateCopBadge(nightIndex) {
+	const nd = nightActions[nightIndex];
+	const badge = $(`#cop-badge-${nd.night}`);
+	if (!badge) return;
+
+	if (nd.copResult) {
+		badge.textContent = nd.copResult;
+		badge.className = `cop-result-badge ${nd.copResult.toLowerCase()}`;
+	} else {
+		badge.textContent = '';
+		badge.className = 'cop-result-badge';
+	}
+}
+
+function recalculateCopResults(fromIndex) {
+	for (let i = fromIndex; i < nightActions.length; i++) {
+		const nd = nightActions[i];
+		nd.copResult = calculateCopResult(nd.copCheck, i);
+		updateCopBadge(i);
+		updateNightOutput(nd.night);
+	}
+}
+
+function generateNightOutput(nightData) {
+	const kills = [...new Set(nightData.mafKills.filter(Boolean))];
+	let output = '';
+
+	if (kills.length) {
+		output += `mafia: ||killed ${kills.join(', ')}||\n`;
+	}
+
+	if (nightData.copCheck) {
+		if (nightData.night > 0 && nightData.copResult) {
+			let prevTarget = null;
+			for (let i = nightData.night - 1; i >= 0; i--) {
+				if (nightActions[i] && nightActions[i].copCheck) {
+					prevTarget = nightActions[i].copCheck;
+					break;
+				}
+			}
+			if (prevTarget) {
+				output += `cop: ||check ${nightData.copCheck} - ${nightData.copResult} to ${prevTarget}||\n`;
+			} else {
+				output += `cop: ||check ${nightData.copCheck}||\n`;
+			}
+		} else {
+			output += `cop: ||check ${nightData.copCheck}||\n`;
+		}
+	}
+
+	if (nightData.medicSave) {
+		output += `medic: ||saved ${nightData.medicSave}||\n`;
+	} else {
+		output += `medic: ||no save||\n`;
+	}
+
+	if (nightData.vigiTarget) {
+		output += `vigi: ||shot ${nightData.vigiTarget}||\n`;
+	} else {
+		output += `vigi: ||holstered||\n`;
+	}
+
+	if (nightData.rngs) {
+		output += `rngs: ${nightData.rngs}`;
+	}
+
+	return output.trimEnd();
+}
+
+function updateNightOutput(nightNum) {
+	const nightData = nightActions.find((n) => n.night === nightNum);
+	if (!nightData) return;
+
+	const pre = $(`#night-output-${nightNum}`);
+	if (pre) {
+		pre.textContent = generateNightOutput(nightData);
+	}
+}
+
+function handleVigiChange(nightIndex, value) {
+	const nd = nightActions[nightIndex];
+	nd.vigiTarget = value;
+	nd.vigiShot = !!value;
+	vigiHasShot = nightActions.some((n) => n.vigiShot);
+
+	$$('.vigi-select').forEach((sel) => {
+		const selNightNum = parseInt(sel.dataset.night);
+		const selND = nightActions[selNightNum];
+		if (!selND) return;
+
+		sel.disabled = vigiHasShot && !selND.vigiShot;
+
+		const spentEl = $(`#vigi-spent-${selNightNum}`);
+		if (spentEl) {
+			spentEl.classList.toggle('hidden', !vigiHasShot || selND.vigiShot);
+		}
+	});
+
+	updateNightOutput(nd.night);
+}
+
+function handleCopyClick(e) {
+	const btn = e.target.closest('.btn-copy');
+	if (!btn) return;
+
+	const targetId = btn.dataset.target;
+	const pre = document.getElementById(targetId);
+	if (!pre) return;
+
+	navigator.clipboard.writeText(pre.textContent).then(() => {
+		btn.textContent = 'Copied!';
+		btn.classList.add('copied');
+		setTimeout(() => {
+			btn.textContent = 'Copy';
+			btn.classList.remove('copied');
+		}, 2000);
+	});
+}
+
+function addNightSection(nightNum) {
+	const nonMafia = currentAssignments.filter((a) => !a.is_ghost && a.role !== 'Mafia');
+	const allReal = currentAssignments.filter((a) => !a.is_ghost);
+
+	const nightData = {
+		night: nightNum,
+		mafKills: ['', ''],
+		copCheck: '',
+		copResult: null,
+		medicSave: '',
+		vigiTarget: '',
+		vigiShot: false,
+		rngs: '',
+	};
+	nightActions.push(nightData);
+
+	const section = document.createElement('div');
+	section.className = 'night-section';
+
+	const heading = document.createElement('h3');
+	heading.textContent = `Night ${nightNum}`;
+	section.appendChild(heading);
+
+	// Mafia Kill 1
+	const mafLabel1 = document.createElement('label');
+	mafLabel1.className = 'night-label';
+	mafLabel1.textContent = 'Mafia Kill 1';
+	section.appendChild(mafLabel1);
+
+	const mafSel1 = createPlayerSelect(nonMafia, 'Select target...');
+	mafSel1.addEventListener('change', () => {
+		nightData.mafKills[0] = mafSel1.value;
+		updateNightOutput(nightNum);
+	});
+	section.appendChild(mafSel1);
+
+	// Mafia Kill 2
+	const mafLabel2 = document.createElement('label');
+	mafLabel2.className = 'night-label';
+	mafLabel2.textContent = 'Mafia Kill 2 (optional)';
+	section.appendChild(mafLabel2);
+
+	const mafSel2 = createPlayerSelect(nonMafia, 'No second kill');
+	mafSel2.addEventListener('change', () => {
+		nightData.mafKills[1] = mafSel2.value;
+		updateNightOutput(nightNum);
+	});
+	section.appendChild(mafSel2);
+
+	// Cop Check
+	const copLabel = document.createElement('label');
+	copLabel.className = 'night-label';
+	copLabel.textContent = 'Cop Check';
+	section.appendChild(copLabel);
+
+	const copRow = document.createElement('div');
+	copRow.className = 'night-field-row';
+
+	const copSel = createPlayerSelect(allReal, 'Select target...');
+	copSel.addEventListener('change', () => {
+		nightData.copCheck = copSel.value;
+		recalculateCopResults(nightActions.indexOf(nightData));
+	});
+	copRow.appendChild(copSel);
+
+	const copBadge = document.createElement('span');
+	copBadge.className = 'cop-result-badge';
+	copBadge.id = `cop-badge-${nightNum}`;
+	copRow.appendChild(copBadge);
+
+	section.appendChild(copRow);
+
+	// Medic Save
+	const medicLabel = document.createElement('label');
+	medicLabel.className = 'night-label';
+	medicLabel.textContent = 'Medic Save';
+	section.appendChild(medicLabel);
+
+	const medicSel = createPlayerSelect(allReal, 'No save');
+	medicSel.addEventListener('change', () => {
+		nightData.medicSave = medicSel.value;
+		updateNightOutput(nightNum);
+	});
+	section.appendChild(medicSel);
+
+	// Vigilante
+	const vigiLabel = document.createElement('label');
+	vigiLabel.className = 'night-label';
+	vigiLabel.textContent = 'Vigilante';
+	section.appendChild(vigiLabel);
+
+	const vigiRow = document.createElement('div');
+	vigiRow.className = 'night-field-row';
+
+	const vigiSel = createPlayerSelect(allReal, 'Holster');
+	vigiSel.classList.add('vigi-select');
+	vigiSel.dataset.night = nightNum;
+	vigiSel.addEventListener('change', () => {
+		handleVigiChange(nightActions.indexOf(nightData), vigiSel.value);
+	});
+	vigiRow.appendChild(vigiSel);
+
+	const vigiSpent = document.createElement('span');
+	vigiSpent.className = 'vigi-spent hidden';
+	vigiSpent.id = `vigi-spent-${nightNum}`;
+	vigiSpent.textContent = 'Shot already used';
+	vigiRow.appendChild(vigiSpent);
+
+	if (vigiHasShot) {
+		vigiSel.disabled = true;
+		vigiSpent.classList.remove('hidden');
+	}
+
+	section.appendChild(vigiRow);
+
+	// RNGs
+	const rngsLabel = document.createElement('label');
+	rngsLabel.className = 'night-label';
+	rngsLabel.textContent = 'RNGs';
+	section.appendChild(rngsLabel);
+
+	const rngsInput = document.createElement('input');
+	rngsInput.type = 'number';
+	rngsInput.className = 'night-input';
+	rngsInput.placeholder = 'Number of RNGs';
+	rngsInput.addEventListener('input', () => {
+		nightData.rngs = rngsInput.value;
+		updateNightOutput(nightNum);
+	});
+	section.appendChild(rngsInput);
+
+	// Discord output block
+	const outputBlock = document.createElement('div');
+	outputBlock.className = 'discord-block';
+
+	const outputHeader = document.createElement('div');
+	outputHeader.className = 'discord-header';
+
+	const outputTitle = document.createElement('span');
+	outputTitle.textContent = `Night ${nightNum} Output`;
+	outputHeader.appendChild(outputTitle);
+
+	const copyBtn = document.createElement('button');
+	copyBtn.className = 'btn-copy';
+	copyBtn.dataset.target = `night-output-${nightNum}`;
+	copyBtn.textContent = 'Copy';
+	outputHeader.appendChild(copyBtn);
+
+	outputBlock.appendChild(outputHeader);
+
+	const outputPre = document.createElement('pre');
+	outputPre.className = 'discord-pre';
+	outputPre.id = `night-output-${nightNum}`;
+	outputBlock.appendChild(outputPre);
+
+	section.appendChild(outputBlock);
+
+	$('#nights-container').appendChild(section);
+	updateNightOutput(nightNum);
+}
+
+function continueToRecord() {
+	renderEditableAssignments();
+	if (currentFormals) renderFormals(currentFormals, $('#locked-formals'));
+	rebuildNight0Checks();
+
+	// Auto-check N0 mafia kill targets
+	if (nightActions.length > 0) {
+		const n0Kills = [...new Set(nightActions[0].mafKills.filter(Boolean))];
+		$$('#night0-checks input[type="checkbox"]').forEach((cb) => {
+			cb.checked = n0Kills.includes(cb.value);
+		});
+	}
+
+	$$('input[name="winner"]').forEach((r) => (r.checked = false));
+	$('#btn-submit').disabled = true;
+	updateRatedPreview();
+
+	showPanel('panel-record');
+}
+
 // --- Event listeners ---
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -762,9 +1126,12 @@ document.addEventListener('DOMContentLoaded', () => {
 	$('#btn-randomize').addEventListener('click', doRandomize);
 	$('#btn-reroll').addEventListener('click', doRandomize);
 	$('#btn-accept').addEventListener('click', acceptAssignments);
-	$('#btn-back').addEventListener('click', () => showPanel('panel-randomize'));
+	$('#btn-back').addEventListener('click', () => showPanel('panel-game'));
 	$('#btn-submit').addEventListener('click', submitResults);
 	$('#btn-new-game').addEventListener('click', newGame);
+	$('#btn-add-night').addEventListener('click', () => addNightSection(nightActions.length));
+	$('#btn-continue-record').addEventListener('click', continueToRecord);
+	$('.container').addEventListener('click', handleCopyClick);
 	$('#btn-undo-last')?.addEventListener('click', undoLastGame);
 
 	$$('input[name="winner"]').forEach((r) => {
