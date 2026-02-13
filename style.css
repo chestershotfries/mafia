@@ -481,6 +481,34 @@ textarea:focus {
   margin-bottom: 0.25rem;
 }
 
+/* Formals schedule */
+.formals-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.5rem;
+  margin: 0.5rem 0 1rem;
+}
+
+.formal-day {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 0.35rem 0.6rem;
+  font-size: 0.85rem;
+}
+
+.formal-label {
+  color: var(--text-muted);
+}
+
+.formal-count {
+  font-weight: 700;
+  color: var(--town-blue);
+}
+
 .hidden {
   display: none;
 }
