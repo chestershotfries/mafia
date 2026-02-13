@@ -423,6 +423,28 @@ textarea:focus {
   text-transform: uppercase;
 }
 
+/* Win indicator */
+.win-indicator {
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius);
+  font-weight: 700;
+  font-size: 1.1rem;
+  text-align: center;
+  margin: 1rem 0;
+}
+
+.win-indicator.mafia-win {
+  background: rgba(233, 69, 96, 0.2);
+  color: var(--mafia-red);
+  border: 1px solid var(--mafia-red);
+}
+
+.win-indicator.town-win {
+  background: rgba(100, 181, 246, 0.2);
+  color: var(--town-blue);
+  border: 1px solid var(--town-blue);
+}
+
 /* Toast */
 .toast {
   position: fixed;

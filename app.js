@@ -943,6 +943,39 @@ function updateNightButtons() {
 	}
 }
 
+function checkWinCondition() {
+	if (!currentAssignments) return null;
+
+	const dead = new Set();
+	for (let i = 0; i < nightActions.length; i++) addNightKills(dead, i);
+	for (const name of Object.values(dayVotes)) {
+		if (name) dead.add(name);
+	}
+
+	const mafia = currentAssignments.filter((a) => a.role === 'Mafia');
+	const town = currentAssignments.filter((a) => a.role !== 'Mafia' && !a.is_ghost);
+	const aliveMafia = mafia.filter((a) => !dead.has(a.name)).length;
+	const aliveTown = town.filter((a) => !dead.has(a.name)).length;
+
+	if (aliveMafia === 0) return { winner: 'Town', mafia: aliveMafia, town: aliveTown };
+	if (aliveMafia >= aliveTown) return { winner: 'Mafia', mafia: aliveMafia, town: aliveTown };
+	return null;
+}
+
+function updateWinIndicator() {
+	const result = checkWinCondition();
+	const el = $('#win-indicator');
+	if (!el) return;
+
+	if (result) {
+		const cls = result.winner === 'Mafia' ? 'mafia-win' : 'town-win';
+		el.textContent = `${result.winner} wins! (${result.mafia} mafia vs ${result.town} town)`;
+		el.className = `win-indicator ${cls}`;
+	} else {
+		el.className = 'win-indicator hidden';
+	}
+}
+
 function addNightKills(deadSet, nightIndex) {
 	const nd = nightActions[nightIndex];
 	if (!nd) return;
@@ -1115,6 +1148,7 @@ function refreshConstraints() {
 	// Recalculate vigiHasShot after potential resets
 	vigiHasShot = nightActions.some((nd) => nd.vigiShot);
 	recalculateCopResults(0);
+	updateWinIndicator();
 }
 
 function addDaySection(dayNum) {
@@ -1342,7 +1376,12 @@ function continueToRecord() {
 	}
 
 	$$('input[name="winner"]').forEach((r) => (r.checked = false));
-	$('#btn-submit').disabled = true;
+	const winResult = checkWinCondition();
+	if (winResult) {
+		const radio = $(`input[name="winner"][value="${winResult.winner}"]`);
+		if (radio) radio.checked = true;
+	}
+	$('#btn-submit').disabled = !winResult;
 	updateRatedPreview();
 
 	showPanel('panel-record');
