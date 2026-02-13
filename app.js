@@ -648,7 +648,7 @@ async function loadLastGame() {
 		const container = $('#last-game-content');
 		if (!data.game) {
 			container.textContent = 'No games recorded yet';
-			undoBtn.classList.add('hidden');
+			undoBtn?.classList.add('hidden');
 			return;
 		}
 
@@ -670,10 +670,10 @@ async function loadLastGame() {
 		}
 		html += '</tbody></table>';
 		container.innerHTML = html;
-		undoBtn.classList.remove('hidden');
+		undoBtn?.classList.remove('hidden');
 	} catch (e) {
 		$('#last-game-content').textContent = 'Failed to load last game';
-		undoBtn.classList.add('hidden');
+		undoBtn?.classList.add('hidden');
 	}
 }
 
@@ -729,7 +729,7 @@ document.addEventListener('DOMContentLoaded', () => {
 	$('#btn-back').addEventListener('click', () => showPanel('panel-randomize'));
 	$('#btn-submit').addEventListener('click', submitResults);
 	$('#btn-new-game').addEventListener('click', newGame);
-	$('#btn-undo-last').addEventListener('click', undoLastGame);
+	$('#btn-undo-last')?.addEventListener('click', undoLastGame);
 
 	$$('input[name="winner"]').forEach((r) => {
 		r.addEventListener('change', updateRatedPreview);
