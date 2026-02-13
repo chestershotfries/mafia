@@ -921,6 +921,7 @@ function handleCopyClick(e) {
 function updateNightButtons() {
 	const container = $('#night-buttons');
 	container.innerHTML = '';
+	const gameOver = !!checkWinCondition();
 	for (let i = 0; i <= 7; i++) {
 		const btn = document.createElement('button');
 		btn.className = 'btn-night';
@@ -930,7 +931,7 @@ function updateNightButtons() {
 		if (i < nightActions.length) {
 			btn.disabled = true;
 			btn.classList.add('used');
-		} else if (i === nightActions.length) {
+		} else if (i === nightActions.length && !gameOver) {
 			btn.addEventListener('click', () => {
 				addNightSection(i);
 				updateNightButtons();
@@ -1013,12 +1014,27 @@ function refreshConstraints() {
 		const nd = nightActions[n];
 		const dead = getDeadBeforeNight(n);
 
-		// Show/hide second mafia kill based on alive mafia count
+		// Show/hide mafia kills based on alive count and N0 player count
 		const mafiaNames = currentAssignments.filter((a) => a.role === 'Mafia').map((a) => a.name);
 		const aliveMafia = mafiaNames.filter((name) => !dead.has(name)).length;
+		const realCount = currentAssignments.filter((a) => !a.is_ghost).length;
+
+		const mafKill1Wrapper = $(`.maf-kill-1-wrapper[data-night="${n}"]`);
 		const mafKill2Wrapper = $(`.maf-kill-2-wrapper[data-night="${n}"]`);
+
+		// Kill 1: hidden only on N0 with 13 players
+		if (mafKill1Wrapper) {
+			if (n === 0 && realCount <= 13) {
+				mafKill1Wrapper.classList.add('hidden');
+				nd.mafKills[0] = '';
+			} else {
+				mafKill1Wrapper.classList.remove('hidden');
+			}
+		}
+
+		// Kill 2: hidden if <3 mafia alive OR N0 with <15 players
 		if (mafKill2Wrapper) {
-			if (aliveMafia < 3) {
+			if (aliveMafia < 3 || (n === 0 && realCount < 15)) {
 				mafKill2Wrapper.classList.add('hidden');
 				const mafSel2 = mafKill2Wrapper.querySelector('.maf-select');
 				if (mafSel2) {
@@ -1027,6 +1043,28 @@ function refreshConstraints() {
 				}
 			} else {
 				mafKill2Wrapper.classList.remove('hidden');
+			}
+		}
+
+		// N0: no vigi shot, no medic save with 13 players
+		const vigiWrap = $(`.vigi-wrapper[data-night="${n}"]`);
+		if (vigiWrap) {
+			if (n === 0) {
+				vigiWrap.classList.add('hidden');
+				nd.vigiTarget = '';
+				nd.vigiShot = false;
+			} else {
+				vigiWrap.classList.remove('hidden');
+			}
+		}
+
+		const medicWrap = $(`.medic-wrapper[data-night="${n}"]`);
+		if (medicWrap) {
+			if (n === 0 && realCount <= 13) {
+				medicWrap.classList.add('hidden');
+				nd.medicSave = '';
+			} else {
+				medicWrap.classList.remove('hidden');
 			}
 		}
 
@@ -1149,6 +1187,7 @@ function refreshConstraints() {
 	vigiHasShot = nightActions.some((nd) => nd.vigiShot);
 	recalculateCopResults(0);
 	updateWinIndicator();
+	updateNightButtons();
 }
 
 function addDaySection(dayNum) {
@@ -1212,10 +1251,14 @@ function addNightSection(nightNum) {
 	section.appendChild(heading);
 
 	// Mafia Kill 1
+	const mafKill1Wrapper = document.createElement('div');
+	mafKill1Wrapper.className = 'maf-kill-1-wrapper';
+	mafKill1Wrapper.dataset.night = nightNum;
+
 	const mafLabel1 = document.createElement('label');
 	mafLabel1.className = 'night-label';
 	mafLabel1.textContent = 'Mafia Kill 1';
-	section.appendChild(mafLabel1);
+	mafKill1Wrapper.appendChild(mafLabel1);
 
 	const mafSel1 = createPlayerSelect(nonMafia, 'Select target...');
 	mafSel1.classList.add('maf-select');
@@ -1225,7 +1268,9 @@ function addNightSection(nightNum) {
 		nightData.mafKills[0] = mafSel1.value;
 		refreshConstraints();
 	});
-	section.appendChild(mafSel1);
+	mafKill1Wrapper.appendChild(mafSel1);
+
+	section.appendChild(mafKill1Wrapper);
 
 	// Mafia Kill 2 (only available when 3 mafia alive)
 	const mafKill2Wrapper = document.createElement('div');
@@ -1275,10 +1320,14 @@ function addNightSection(nightNum) {
 	section.appendChild(copRow);
 
 	// Medic Save
+	const medicWrapper = document.createElement('div');
+	medicWrapper.className = 'medic-wrapper';
+	medicWrapper.dataset.night = nightNum;
+
 	const medicLabel = document.createElement('label');
 	medicLabel.className = 'night-label';
 	medicLabel.textContent = 'Medic Save';
-	section.appendChild(medicLabel);
+	medicWrapper.appendChild(medicLabel);
 
 	const medicSel = createPlayerSelect(medicTargets, 'Select target...');
 	medicSel.classList.add('medic-select');
@@ -1287,13 +1336,19 @@ function addNightSection(nightNum) {
 		nightData.medicSave = medicSel.value;
 		refreshConstraints();
 	});
-	section.appendChild(medicSel);
+	medicWrapper.appendChild(medicSel);
+
+	section.appendChild(medicWrapper);
 
 	// Vigilante
+	const vigiWrapper = document.createElement('div');
+	vigiWrapper.className = 'vigi-wrapper';
+	vigiWrapper.dataset.night = nightNum;
+
 	const vigiLabel = document.createElement('label');
 	vigiLabel.className = 'night-label';
 	vigiLabel.textContent = 'Vigilante';
-	section.appendChild(vigiLabel);
+	vigiWrapper.appendChild(vigiLabel);
 
 	const vigiRow = document.createElement('div');
 	vigiRow.className = 'night-field-row';
@@ -1314,7 +1369,9 @@ function addNightSection(nightNum) {
 	vigiSpent.textContent = 'Shot already used';
 	vigiRow.appendChild(vigiSpent);
 
-	section.appendChild(vigiRow);
+	vigiWrapper.appendChild(vigiRow);
+
+	section.appendChild(vigiWrapper);
 
 	// RNGs (predetermined from formals)
 	const rngsCount = currentFormals && currentFormals[nightNum]
