@@ -980,6 +980,23 @@ function refreshConstraints() {
 		const nd = nightActions[n];
 		const dead = getDeadBeforeNight(n);
 
+		// Show/hide second mafia kill based on alive mafia count
+		const mafiaNames = currentAssignments.filter((a) => a.role === 'Mafia').map((a) => a.name);
+		const aliveMafia = mafiaNames.filter((name) => !dead.has(name)).length;
+		const mafKill2Wrapper = $(`.maf-kill-2-wrapper[data-night="${n}"]`);
+		if (mafKill2Wrapper) {
+			if (aliveMafia < 3) {
+				mafKill2Wrapper.classList.add('hidden');
+				const mafSel2 = mafKill2Wrapper.querySelector('.maf-select');
+				if (mafSel2) {
+					mafSel2.value = '';
+					nd.mafKills[1] = '';
+				}
+			} else {
+				mafKill2Wrapper.classList.remove('hidden');
+			}
+		}
+
 		// Update day vote select (Day n precedes Night n)
 		if (n > 0) {
 			const daySel = $(`.day-vote-select[data-day="${n}"]`);
@@ -1176,13 +1193,17 @@ function addNightSection(nightNum) {
 	});
 	section.appendChild(mafSel1);
 
-	// Mafia Kill 2
+	// Mafia Kill 2 (only available when 3 mafia alive)
+	const mafKill2Wrapper = document.createElement('div');
+	mafKill2Wrapper.className = 'maf-kill-2-wrapper';
+	mafKill2Wrapper.dataset.night = nightNum;
+
 	const mafLabel2 = document.createElement('label');
 	mafLabel2.className = 'night-label';
-	mafLabel2.textContent = 'Mafia Kill 2 (optional)';
-	section.appendChild(mafLabel2);
+	mafLabel2.textContent = 'Mafia Kill 2';
+	mafKill2Wrapper.appendChild(mafLabel2);
 
-	const mafSel2 = createPlayerSelect(nonMafia, 'No second kill');
+	const mafSel2 = createPlayerSelect(nonMafia, 'Select target...');
 	mafSel2.classList.add('maf-select');
 	mafSel2.dataset.night = nightNum;
 	mafSel2.dataset.kill = '1';
@@ -1190,7 +1211,9 @@ function addNightSection(nightNum) {
 		nightData.mafKills[1] = mafSel2.value;
 		refreshConstraints();
 	});
-	section.appendChild(mafSel2);
+	mafKill2Wrapper.appendChild(mafSel2);
+
+	section.appendChild(mafKill2Wrapper);
 
 	// Cop Check
 	const copLabel = document.createElement('label');
