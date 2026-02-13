@@ -6,6 +6,7 @@ const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx26D5vPJ2_3wy5bkvi_
 const GHOST_NAME = 'Ghost';
 
 let currentAssignments = null;
+let currentFormals = null;
 let knownPlayers = [];
 
 const $ = (sel) => document.querySelector(sel);
@@ -133,6 +134,14 @@ function randomize(names) {
 	return assignments;
 }
 
+function randomizeFormals() {
+	const formals = [];
+	for (let day = 1; day <= 8; day++) {
+		formals.push({ day, count: Math.floor(Math.random() * 3) });
+	}
+	return formals;
+}
+
 // --- Render assignments ---
 
 function renderAssignments(assignments, listEl) {
@@ -161,6 +170,23 @@ function renderAssignments(assignments, listEl) {
 	}
 }
 
+function renderFormals(formals, el) {
+	el.innerHTML = '';
+	for (const f of formals) {
+		const div = document.createElement('div');
+		div.className = 'formal-day';
+		const label = document.createElement('span');
+		label.className = 'formal-label';
+		label.textContent = `Day ${f.day}`;
+		const value = document.createElement('span');
+		value.className = 'formal-count';
+		value.textContent = f.count;
+		div.appendChild(label);
+		div.appendChild(value);
+		el.appendChild(div);
+	}
+}
+
 // --- Randomize (now client-side) ---
 
 function doRandomize() {
@@ -168,7 +194,9 @@ function doRandomize() {
 	try {
 		const names = validateNames(raw);
 		currentAssignments = randomize(names);
+		currentFormals = randomizeFormals();
 		renderAssignments(currentAssignments, $('#assignments-list'));
+		renderFormals(currentFormals, $('#formals-schedule'));
 		$('#assignments-display').classList.remove('hidden');
 	} catch (e) {
 		showToast(e.message);
@@ -508,6 +536,7 @@ function autoMatchNames() {
 function acceptAssignments() {
 	autoMatchNames();
 	renderEditableAssignments();
+	if (currentFormals) renderFormals(currentFormals, $('#locked-formals'));
 	rebuildNight0Checks();
 
 	$$('input[name="winner"]').forEach((r) => (r.checked = false));
@@ -708,6 +737,7 @@ async function undoLastGame() {
 
 function newGame() {
 	currentAssignments = null;
+	currentFormals = null;
 	$('#names-input').value = '';
 	$('#assignments-display').classList.add('hidden');
 	countNames();
