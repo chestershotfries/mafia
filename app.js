@@ -642,11 +642,13 @@ function renderResults(result) {
 // --- Load last game ---
 
 async function loadLastGame() {
+	const undoBtn = $('#btn-undo-last');
 	try {
 		const data = await api('getLastGame');
 		const container = $('#last-game-content');
 		if (!data.game) {
 			container.textContent = 'No games recorded yet';
+			undoBtn.classList.add('hidden');
 			return;
 		}
 
@@ -668,8 +670,31 @@ async function loadLastGame() {
 		}
 		html += '</tbody></table>';
 		container.innerHTML = html;
+		undoBtn.classList.remove('hidden');
 	} catch (e) {
 		$('#last-game-content').textContent = 'Failed to load last game';
+		undoBtn.classList.add('hidden');
+	}
+}
+
+// --- Undo last game ---
+
+async function undoLastGame() {
+	const confirmed = await confirmAction(
+		'Undo the last recorded game?<br><br>This will restore all player ratings to their previous values and delete the game from history.'
+	);
+	if (!confirmed) return;
+
+	const btn = $('#btn-undo-last');
+	btn.disabled = true;
+	try {
+		const result = await api('undoLastGame');
+		showToast(`Game ${result.undone_game_id} undone (${result.players_restored.length} players restored)`, true);
+		await loadLastGame();
+	} catch (e) {
+		showToast(e.message);
+	} finally {
+		btn.disabled = false;
 	}
 }
 
@@ -704,6 +729,7 @@ document.addEventListener('DOMContentLoaded', () => {
 	$('#btn-back').addEventListener('click', () => showPanel('panel-randomize'));
 	$('#btn-submit').addEventListener('click', submitResults);
 	$('#btn-new-game').addEventListener('click', newGame);
+	$('#btn-undo-last').addEventListener('click', undoLastGame);
 
 	$$('input[name="winner"]').forEach((r) => {
 		r.addEventListener('change', updateRatedPreview);

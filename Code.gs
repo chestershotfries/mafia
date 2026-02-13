@@ -35,6 +35,9 @@ function doPost(e) {
       case 'recordGame':
         result = recordGame(body);
         break;
+      case 'undoLastGame':
+        result = undoLastGame();
+        break;
       default:
         result = {error: 'Unknown action: ' + action};
     }
@@ -325,6 +328,85 @@ function recordGame(body) {
         ghosts: assignments.filter(function(a) { return a.is_ghost; }).map(function(a) { return a.name; }),
         night0_kills: night0Kills,
       },
+    };
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function undoLastGame() {
+  var lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+
+  try {
+    var ss = SpreadsheetApp.openById(SHEET_ID);
+    var wsHistory = ss.getSheetByName('MatchHistory');
+    var historyData = wsHistory.getDataRange().getValues();
+
+    if (historyData.length < 2 || !historyData[1][0]) {
+      throw new Error('No games to undo');
+    }
+
+    var gameId = historyData[1][0];
+
+    // Collect all rows belonging to this game (contiguous block starting at row 2)
+    var gameRowCount = 0;
+    var playersToRestore = [];
+    for (var i = 1; i < historyData.length; i++) {
+      if (historyData[i][0] !== gameId) break;
+      gameRowCount++;
+      playersToRestore.push({
+        name: historyData[i][1],
+        old_mu: historyData[i][5],   // col F
+        old_sigma: historyData[i][10], // col K
+      });
+    }
+
+    // Restore ratings in MatchRatings
+    var wsRatings = ss.getSheetByName('MatchRatings');
+    var ratingsData = wsRatings.getDataRange().getValues();
+    var ratingsLookup = {};
+    for (var i = 1; i < ratingsData.length; i++) {
+      if (ratingsData[i][0]) {
+        ratingsLookup[ratingsData[i][0]] = i + 1; // 1-indexed sheet row
+      }
+    }
+
+    var restoredPlayers = [];
+    for (var i = 0; i < playersToRestore.length; i++) {
+      var p = playersToRestore[i];
+      var row = ratingsLookup[p.name];
+      if (row) {
+        wsRatings.getRange(row, 2, 1, 2).setValues([[p.old_mu, p.old_sigma]]);
+        restoredPlayers.push(p.name);
+      }
+    }
+
+    // Delete game rows from MatchHistory (row 2 through row 2+count-1)
+    wsHistory.deleteRows(2, gameRowCount);
+
+    // Delete matching rows from RoleHistory
+    var wsRoles;
+    try {
+      wsRoles = ss.getSheetByName('RoleHistory');
+    } catch (_) {
+      wsRoles = null;
+    }
+    if (wsRoles) {
+      var rolesData = wsRoles.getDataRange().getValues();
+      // Delete from bottom up to avoid row index shifting
+      for (var i = rolesData.length - 1; i >= 1; i--) {
+        if (rolesData[i][0] === gameId) {
+          wsRoles.deleteRow(i + 1);
+        }
+      }
+    }
+
+    SpreadsheetApp.flush();
+
+    return {
+      undone_game_id: Number(gameId),
+      players_restored: restoredPlayers,
     };
   } finally {
     lock.releaseLock();
