@@ -1,73 +1,48 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+Mafia game tracker with TrueSkill ratings.
 
-## Project Overview
+## Stack
 
-Mafia game tracker with TrueSkill ratings. Three-tier hybrid architecture:
-
-- **Frontend** (`app.js`, `index.html`, `style.css`): Vanilla JS single-page app hosted on GitHub Pages.
-  Handles role randomization, night/day phase tracking, Discord output generation, and game recording UI.
-- **Backend** (`Code.gs`): Google Apps Script web app. Handles TrueSkill rating calculations, Google Sheets
-  read/write, and concurrency via `LockService`.
-- **Offline analysis** (`Mafia_Rating_Experimental.py`): Python TrueSkill parameter tuning against historical data.
+- **Frontend**: `app.js`, `index.html`, `style.css` — vanilla JS SPA, GitHub Pages
+- **Backend**: `backend/main.py` — Python Cloud Function (gen2), GCP, `trueskill` + `gspread`
+- **Offline**: `Mafia_Rating_Experimental.py` — TrueSkill parameter tuning (`trueskill`, `pandas`, `numpy`)
 
 ## Development
 
-### Frontend
+- Frontend: no build step, edit and test in browser, deploys on push to `main`
+- Backend: deps in `backend/requirements.txt`, auth via `SERVICE_ACCOUNT_KEY` env var or `service-account.json`
 
-No build step. Edit JS/HTML/CSS directly and test in browser. Deploys automatically to GitHub Pages on push to `main`.
+## Architecture
 
-### Backend (Code.gs)
+**Panel flow**: randomize → game (night/day actions) → record (finalize) → results (ratings)
 
-Deployed manually through the Google Apps Script editor. Changes here do **not** go through git push.
+**Frontend state** (`app.js`):
+`currentAssignments[]` (position, name, role, is_ghost),
+`nightActions[]` (mafKills, copCheck/copResult, medicSave, vigiTarget),
+`dayVotes{}` (day number → voted-out name),
+`currentFormals[]` (RNG counts per day)
 
-### Python script
+**API**: `api(action, data)` POSTs JSON to Cloud Function.
+Actions: `getPlayers`, `getLastGame`, `recordGame`, `undoLastGame`
 
-Standalone script. Dependencies: `trueskill`, `pandas`, `numpy` (no requirements.txt).
+**Sheets**: `MatchRatings` (mu/sigma per player), `MatchHistory` (game log, newest at row 2), `Stats Summary` (auto-sorted)
 
-## Architecture Details
+**Positions**: 1-3 Mafia, 4 Cop, 5 Medic, 6 Vigilante, 7-15 Town. 13-15 players, ghosts fill to 15.
 
-### Frontend data model (app.js)
+## TrueSkill
 
-- `currentAssignments[]` — player objects with `position`, `name`, `role` (Mafia/Town), `is_ghost`
-- `nightActions[]` — per-night actions: mafia kills, cop check/result, medic save, vigi target
-- `dayVotes{}` — day-phase vote-outs keyed by day number
-- `currentFormals[]` — RNG formal counts per day
+Backend uses `trueskill` library with ghost-padded teams.
+mu=25, sigma=25/3, tau=0.1, beta=5.5.
+Mafia ghost: mu=25.7 sigma=0.8. Town ghost: mu=23.85 sigma=0.8.
+Mafia team padded with geometric-mean fillers to match town size.
+Display rating: `round((mu - 1.5 * sigma) * 68)`.
 
-### Panel flow
+## Game Rules
 
-Four sequential panels: **randomize** → **game** (night/day actions) → **record** (finalize result) → **results**
-(rating changes).
-
-### Backend API (Code.gs)
-
-All calls go through `api(action, data)` in app.js which POSTs to the Apps Script web app.
-
-Key endpoints: `getPlayers`, `getLastGame`, `recordGame`, `undoLastGame`.
-
-### TrueSkill
-
-Custom JS implementation in Code.gs (not an external library). Constants: mu=25, sigma=25/3, beta=40.7, tau=0.
-The Python script mirrors this for offline tuning with different ghost parameters.
-
-### Game rules encoded in frontend
-
-- N0: Mafia kill 1 hidden if ≤13 players; no vigi/medic if ≤13 players
-- Kill 2 only if 3+ mafia alive
+- N0: kill 1 hidden if ≤13 players; no vigi; no medic if ≤13
+- Kill 2: requires 3+ mafia alive; hidden on N0 if <15 players
 - Cop: no repeat checks, no self-check
-- Medic: no consecutive saves on same target
-- Vigi: one-shot only
-- Auto win detection: mafia=0 (town wins) or mafia≥town (mafia wins)
-
-## Commit Convention
-
-Gitmoji + conventional commits per `~/.config/git/template`:
-
-```text
-✨ feat:     New features
-🐛 fix:      Bug fixes
-♻️  refactor: Refactor code
-💄 ui:       UI/style changes
-🔧 config:   Configuration
-```
+- Medic: no consecutive saves on same target, no self save
+- Vigi: one-shot, disabled on N0
+- Win: mafia=0 → town wins; mafia≥town → mafia wins
