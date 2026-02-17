@@ -37,6 +37,17 @@ body {
   padding: 1.5rem;
 }
 
+.header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.header-row h1 {
+  margin-bottom: 0;
+}
+
 h1 {
   text-align: center;
   color: var(--accent);

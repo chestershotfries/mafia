@@ -124,6 +124,18 @@ def sort_stats_summary(ss):
         ws.sort((12, 'des'), range=f'A2:L{last_row}')
 
 
+def parse_pct(val):
+    """Parse '65%' or '0.65' or '65' into a float 0-100."""
+    if not val:
+        return 0.0
+    s = str(val).strip().rstrip('%')
+    try:
+        f = float(s)
+        return round(f if f > 1 else f * 100, 1)
+    except ValueError:
+        return 0.0
+
+
 def get_players():
     ss = get_sheet()
     ws = ss.worksheet('MatchRatings')
@@ -366,6 +378,87 @@ def undo_last_game():
     }
 
 
+def get_stats():
+    ss = get_sheet()
+
+    ws_stats = ss.worksheet('Stats Summary')
+    stats_data = ws_stats.get_all_values()
+    players = []
+    for row in stats_data[1:]:
+        if not row[0]:
+            continue
+        players.append({
+            'name': row[0],
+            'town_games': int(float(row[1])) if row[1] else 0,
+            'town_wins': int(float(row[2])) if row[2] else 0,
+            'town_win_pct': parse_pct(row[3]),
+            'mafia_games': int(float(row[4])) if row[4] else 0,
+            'mafia_wins': int(float(row[5])) if row[5] else 0,
+            'mafia_win_pct': parse_pct(row[6]),
+            'total_games': int(float(row[7])) if row[7] else 0,
+            'total_win_pct': parse_pct(row[8]),
+            'mu': float(row[9]) if row[9] else 0,
+            'sigma': float(row[10]) if row[10] else 0,
+            'rating': int(float(row[11])) if row[11] else 0,
+        })
+
+    ws_history = ss.worksheet('MatchHistory')
+    history_data = ws_history.get_all_values()
+    game_results = {}
+    for row in history_data[1:]:
+        gid = row[0]
+        if not gid or gid in game_results:
+            continue
+        alignment = row[2]
+        result = row[3]
+        if result == 'Win':
+            game_results[gid] = alignment
+        elif result == 'Loss':
+            game_results[gid] = 'Town' if alignment == 'Mafia' else 'Mafia'
+
+    total_games = len(game_results)
+    mafia_wins = sum(1 for w in game_results.values() if w == 'Mafia')
+    town_wins = total_games - mafia_wins
+
+    return {
+        'players': players,
+        'game_summary': {
+            'total_games': total_games,
+            'mafia_wins': mafia_wins,
+            'town_wins': town_wins,
+            'mafia_win_pct': round(100 * mafia_wins / total_games, 1) if total_games else 0,
+            'town_win_pct': round(100 * town_wins / total_games, 1) if total_games else 0,
+        },
+    }
+
+
+def get_player_history(body):
+    player_name = body.get('player_name')
+    if not player_name:
+        raise ValueError('player_name is required')
+
+    ss = get_sheet()
+    ws_history = ss.worksheet('MatchHistory')
+    history_data = ws_history.get_all_values()
+
+    games = []
+    for row in history_data[1:]:
+        if row[1] != player_name:
+            continue
+        entry = {
+            'game_id': int(float(row[0])),
+            'alignment': row[2],
+            'result': row[3],
+            'rate_change': int(float(row[4])) if row[4] else 0,
+        }
+        if row[5]:
+            entry['old_rating'] = int(float(row[8]))
+            entry['new_rating'] = int(float(row[9]))
+        games.append(entry)
+
+    return {'player_name': player_name, 'games': games}
+
+
 # --- HTTP handler ---
 
 def make_response(data, status=200):
@@ -397,6 +490,10 @@ def main(request):
             result = record_game(body)
         elif action == 'undoLastGame':
             result = undo_last_game()
+        elif action == 'getStats':
+            result = get_stats()
+        elif action == 'getPlayerHistory':
+            result = get_player_history(body)
         else:
             return make_response({'error': f'Unknown action: {action}'}, 400)
 

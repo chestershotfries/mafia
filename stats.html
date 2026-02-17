@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mafia Stats</title>
+  <link rel="stylesheet" href="./style.css">
+  <link rel="stylesheet" href="./stats.css">
+</head>
+<body>
+  <div class="container">
+    <div class="stats-header">
+      <h1>Player Stats</h1>
+      <a href="./index.html" class="btn btn-secondary">Back to Game</a>
+    </div>
+
+    <!-- Summary cards -->
+    <div class="stats-cards">
+      <div class="stat-card">
+        <span class="stat-value" id="stat-total-games">--</span>
+        <span class="stat-label">Total Games</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-value mafia" id="stat-mafia-pct">--</span>
+        <span class="stat-label">Mafia Win %</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-value town" id="stat-town-pct">--</span>
+        <span class="stat-label">Town Win %</span>
+      </div>
+    </div>
+
+    <!-- Leaderboard -->
+    <section class="panel">
+      <h2>Leaderboard</h2>
+      <div class="table-scroll">
+        <table id="stats-table" class="stats-table">
+          <thead>
+            <tr>
+              <th data-sort="name">Player</th>
+              <th data-sort="rating" class="sort-active sort-desc">Rating</th>
+              <th data-sort="total_games">Games</th>
+              <th data-sort="total_win_pct">Win %</th>
+              <th data-sort="mafia_games">M Games</th>
+              <th data-sort="mafia_win_pct">M Win %</th>
+              <th data-sort="town_games">T Games</th>
+              <th data-sort="town_win_pct">T Win %</th>
+            </tr>
+          </thead>
+          <tbody id="stats-tbody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Player detail -->
+    <section id="player-detail" class="panel hidden">
+      <div class="detail-header">
+        <h2 id="detail-player-name"></h2>
+        <button id="btn-close-detail" class="btn btn-secondary">Close</button>
+      </div>
+      <p id="detail-loading" class="hidden">Loading...</p>
+      <table id="detail-table" class="results-table">
+        <thead>
+          <tr>
+            <th>Game</th>
+            <th>Alignment</th>
+            <th>Result</th>
+            <th>Rating</th>
+            <th>Change</th>
+          </tr>
+        </thead>
+        <tbody id="detail-tbody"></tbody>
+      </table>
+    </section>
+
+    <!-- Toast -->
+    <div id="toast" class="toast hidden"></div>
+  </div>
+
+  <script src="./stats.js"></script>
+</body>
+</html>

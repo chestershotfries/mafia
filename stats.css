@@ -1,0 +1,128 @@
+/* Stats page header */
+.stats-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.stats-header h1 {
+  margin-bottom: 0;
+}
+
+/* Summary cards */
+.stats-cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.stat-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1rem;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.stat-value {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.stat-value.mafia {
+  color: var(--mafia-red);
+}
+
+.stat-value.town {
+  color: var(--town-blue);
+}
+
+.stat-label {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+/* Leaderboard table */
+.table-scroll {
+  overflow-x: auto;
+}
+
+.stats-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.stats-table th,
+.stats-table td {
+  padding: 0.5rem 0.6rem;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+.stats-table th {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  cursor: pointer;
+  user-select: none;
+}
+
+.stats-table th:hover {
+  color: var(--text);
+}
+
+.stats-table th.sort-active {
+  color: var(--accent);
+}
+
+.stats-table th.sort-active.sort-desc::after {
+  content: ' \25BC';
+  font-size: 0.65rem;
+}
+
+.stats-table th.sort-active.sort-asc::after {
+  content: ' \25B2';
+  font-size: 0.65rem;
+}
+
+.stats-table tbody tr {
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.stats-table tbody tr:hover {
+  background: var(--surface-alt);
+}
+
+.stats-table tbody tr.selected {
+  background: var(--surface-alt);
+  border-left: 3px solid var(--accent);
+}
+
+/* Player detail */
+.detail-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.detail-header h2 {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+  .stats-cards {
+    grid-template-columns: 1fr;
+  }
+}
