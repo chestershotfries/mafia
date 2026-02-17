@@ -342,6 +342,10 @@ textarea:focus {
   color: var(--town-blue);
 }
 
+.results-table .excluded-row {
+  opacity: 0.5;
+}
+
 /* Roles summary */
 .roles-summary {
   margin-top: 1rem;

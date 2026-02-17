@@ -1,7 +1,7 @@
-/* Mafia Randomizer frontend — GitHub Pages + Google Apps Script */
+/* Mafia Randomizer frontend — GitHub Pages + Cloud Function backend */
 
-// Replace with your Apps Script deployment URL
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx26D5vPJ2_3wy5bkvi_TGnCrzK6JFM8gpnPrn1fxj9l3WxcjsgI7EfVBaxT_ajw8dY/exec';
+// Replace with your Cloud Function deployment URL
+const SCRIPT_URL = 'https://us-central1-mafia-tracker-310960.cloudfunctions.net/mafia-backend';
 
 const GHOST_NAME = 'Ghost';
 
@@ -33,13 +33,13 @@ function showPanel(id) {
 	$(`#${id}`).classList.remove('hidden');
 }
 
-// --- API helper (Apps Script) ---
+// --- API helper ---
 
 async function api(action, data = {}) {
 	const resp = await fetch(SCRIPT_URL, {
 		method: 'POST',
+		headers: { 'Content-Type': 'application/json' },
 		body: JSON.stringify({ action, ...data }),
-		// No Content-Type header — avoids CORS preflight with Apps Script
 	});
 	const result = await resp.json();
 	if (result.error) {
@@ -636,11 +636,23 @@ function renderResults(result) {
 
 	for (const p of result.players) {
 		const tr = document.createElement('tr');
-		const changeClass = p.rate_change >= 0 ? 'change-pos' : 'change-neg';
 		const alignClass = p.alignment === 'Mafia' ? 'align-mafia' : 'align-town';
-		const sign = p.rate_change >= 0 ? '+' : '';
+		const isExcluded = p.result === 'Ghost' || p.result === 'Night Zero';
 
-		tr.innerHTML = `
+		if (isExcluded) {
+			tr.innerHTML = `
+      <td>${p.name}</td>
+      <td class="${alignClass}">${p.alignment}</td>
+      <td>${p.result}</td>
+      <td>-</td>
+      <td>-</td>
+      <td>0</td>
+    `;
+			tr.classList.add('excluded-row');
+		} else {
+			const changeClass = p.rate_change >= 0 ? 'change-pos' : 'change-neg';
+			const sign = p.rate_change >= 0 ? '+' : '';
+			tr.innerHTML = `
       <td>${p.name}</td>
       <td class="${alignClass}">${p.alignment}</td>
       <td>${p.result}</td>
@@ -648,23 +660,12 @@ function renderResults(result) {
       <td>${p.new_rating}</td>
       <td class="${changeClass}">${sign}${p.rate_change}</td>
     `;
+		}
 		tbody.appendChild(tr);
 	}
 
 	const rolesDiv = $('#roles-summary');
-	if (result.roles && result.roles.length) {
-		const roleLabels = { Mafia: 'align-mafia', Cop: 'role-cop', Medic: 'role-medic', Vigilante: 'role-vig' };
-		let html = '<h3>Roles Recorded</h3><div class="roles-list">';
-		for (const r of result.roles) {
-			const cls = roleLabels[r.role] || '';
-			const ghost = r.is_ghost ? ' (Ghost)' : '';
-			html += `<span class="role-tag ${cls}">${r.name}${ghost}: ${r.role}</span>`;
-		}
-		html += '</div>';
-		rolesDiv.innerHTML = html;
-	} else {
-		rolesDiv.innerHTML = '';
-	}
+	rolesDiv.innerHTML = '';
 
 	const excl = $('#excluded-summary');
 	const parts = [];
@@ -698,15 +699,25 @@ async function loadLastGame() {
     </tr></thead><tbody>`;
 
 		for (const p of data.game.players) {
-			const changeClass = p.rate_change >= 0 ? 'change-pos' : 'change-neg';
 			const alignClass = p.alignment === 'Mafia' ? 'align-mafia' : 'align-town';
-			const sign = p.rate_change >= 0 ? '+' : '';
-			html += `<tr>
+			const isExcluded = p.result === 'Ghost' || p.result === 'Night Zero';
+			if (isExcluded) {
+				html += `<tr class="excluded-row">
+        <td>${p.player}</td>
+        <td class="${alignClass}">${p.alignment}</td>
+        <td>${p.result}</td>
+        <td>0</td>
+      </tr>`;
+			} else {
+				const changeClass = p.rate_change >= 0 ? 'change-pos' : 'change-neg';
+				const sign = p.rate_change >= 0 ? '+' : '';
+				html += `<tr>
         <td>${p.player}</td>
         <td class="${alignClass}">${p.alignment}</td>
         <td>${p.result}</td>
         <td class="${changeClass}">${sign}${p.rate_change}</td>
       </tr>`;
+			}
 		}
 		html += '</tbody></table>';
 		container.innerHTML = html;

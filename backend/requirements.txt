@@ -1,0 +1,4 @@
+functions-framework
+gspread
+google-auth
+trueskill
