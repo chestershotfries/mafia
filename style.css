@@ -7,19 +7,19 @@
 }
 
 :root {
-  --bg: #1a1a2e;
-  --surface: #16213e;
-  --surface-alt: #0f3460;
-  --text: #e0e0e0;
-  --text-muted: #888;
-  --mafia-red: #e94560;
-  --town-blue: #64b5f6;
-  --ghost-grey: #666;
-  --positive: #4caf50;
-  --negative: #f44336;
-  --accent: #e94560;
-  --accent-hover: #c73650;
-  --border: #2a2a4a;
+  --bg: #1a1a1a;
+  --surface: #2d2d2d;
+  --surface-alt: #3a3a3a;
+  --text: #e8e8e8;
+  --text-muted: #999;
+  --mafia-red: #c41e3a;
+  --town-blue: #5b9bd5;
+  --ghost-grey: #808080;
+  --positive: #4a9d6f;
+  --negative: #d32f2f;
+  --accent: #c41e3a;
+  --accent-hover: #a8162f;
+  --border: #4a4a4a;
   --radius: 8px;
 }
 
@@ -386,18 +386,18 @@ textarea:focus {
 }
 
 .role-tag.role-cop {
-  color: #ffd54f;
-  border-color: #ffd54f;
+  color: #d4a843;
+  border-color: #d4a843;
 }
 
 .role-tag.role-medic {
-  color: #81c784;
-  border-color: #81c784;
+  color: #5fa863;
+  border-color: #5fa863;
 }
 
 .role-tag.role-vig {
-  color: #ff8a65;
-  border-color: #ff8a65;
+  color: #d97a50;
+  border-color: #d97a50;
 }
 
 /* Excluded summary */
@@ -449,13 +449,13 @@ textarea:focus {
 }
 
 .win-indicator.mafia-win {
-  background: rgba(233, 69, 96, 0.2);
+  background: rgba(196, 30, 58, 0.2);
   color: var(--mafia-red);
   border: 1px solid var(--mafia-red);
 }
 
 .win-indicator.town-win {
-  background: rgba(100, 181, 246, 0.2);
+  background: rgba(91, 155, 213, 0.2);
   color: var(--town-blue);
   border: 1px solid var(--town-blue);
 }
@@ -548,7 +548,7 @@ textarea:focus {
 
 /* Discord codeblock */
 .discord-block {
-  background: #2b2d31;
+  background: #2d2d2d;
   border-radius: var(--radius);
   margin: 1rem 0;
   overflow: hidden;
@@ -559,7 +559,7 @@ textarea:focus {
   justify-content: space-between;
   align-items: center;
   padding: 0.5rem 0.75rem;
-  background: #1e1f22;
+  background: #252525;
   font-size: 0.8rem;
   color: var(--text-muted);
 }
@@ -569,7 +569,7 @@ textarea:focus {
   margin: 0;
   font-family: 'Consolas', 'Monaco', monospace;
   font-size: 0.85rem;
-  color: #dbdee1;
+  color: #e8e8e8;
   white-space: pre-wrap;
   word-break: break-word;
 }
@@ -725,12 +725,12 @@ textarea:focus {
 }
 
 .cop-result-badge.same {
-  background: rgba(100, 181, 246, 0.2);
+  background: rgba(91, 155, 213, 0.2);
   color: var(--town-blue);
 }
 
 .cop-result-badge.different {
-  background: rgba(233, 69, 96, 0.2);
+  background: rgba(196, 30, 58, 0.2);
   color: var(--mafia-red);
 }
 
