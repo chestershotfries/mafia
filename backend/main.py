@@ -301,6 +301,7 @@ def record_game(body):
     ws_history.insert_rows(history_rows, row=2)
 
     # Update MatchRatings
+    new_players = []
     for a in rated:
         name = a['name']
         nr = new_ratings[name]
@@ -312,6 +313,39 @@ def record_game(body):
             ws_ratings.update(f'A{next_row}:C{next_row}', [[name, nr['mu'], nr['sigma']]])
             ratings_data.append([name, nr['mu'], nr['sigma']])
             current_ratings[name] = {'mu': nr['mu'], 'sigma': nr['sigma'], 'row': next_row}
+            new_players.append(name)
+
+    # Add new players to Stats Summary (name + copy formulas from row 2)
+    if new_players:
+        try:
+            ws_stats = ss.worksheet('Stats Summary')
+            stats_rows = len(ws_stats.get_all_values())
+            for i, name in enumerate(new_players):
+                dest_row = stats_rows + 1 + i
+                ws_stats.update(f'A{dest_row}', [[name]])
+                ss.batch_update({
+                    'requests': [{
+                        'copyPaste': {
+                            'source': {
+                                'sheetId': ws_stats.id,
+                                'startRowIndex': 1,
+                                'endRowIndex': 2,
+                                'startColumnIndex': 1,
+                                'endColumnIndex': 12,
+                            },
+                            'destination': {
+                                'sheetId': ws_stats.id,
+                                'startRowIndex': dest_row - 1,
+                                'endRowIndex': dest_row,
+                                'startColumnIndex': 1,
+                                'endColumnIndex': 12,
+                            },
+                            'pasteType': 'PASTE_FORMULA',
+                        }
+                    }]
+                })
+        except gspread.exceptions.WorksheetNotFound:
+            pass
 
     # Sort Stats Summary
     sort_stats_summary(ss)

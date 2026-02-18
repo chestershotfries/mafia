@@ -353,7 +353,12 @@ function renderEditableAssignments(listEl = $('#locked-list')) {
 			);
 			const suggestion = findClosestPlayer(a.name);
 
-			if (suggestion) {
+			if (a.skipMatch) {
+				const badge = document.createElement('span');
+				badge.className = 'name-match-badge new-player';
+				badge.textContent = 'new player';
+				li.appendChild(badge);
+			} else if (suggestion) {
 				const sugBtn = document.createElement('button');
 				sugBtn.className = 'name-suggestion-btn';
 				sugBtn.innerHTML = `&rarr; ${suggestion}?`;
@@ -371,6 +376,16 @@ function renderEditableAssignments(listEl = $('#locked-list')) {
 				badge.className = 'name-match-badge matched';
 				badge.textContent = 'matched';
 				li.appendChild(badge);
+
+				const notBtn = document.createElement('button');
+				notBtn.className = 'name-notmatch-btn';
+				notBtn.textContent = 'not them?';
+				notBtn.title = 'Mark as a different player with the same name';
+				notBtn.addEventListener('click', () => {
+					a.skipMatch = true;
+					startNameEdit(a, nameBtn, listEl);
+				});
+				li.appendChild(notBtn);
 			} else {
 				const badge = document.createElement('span');
 				badge.className = 'name-match-badge new-player';
@@ -444,6 +459,7 @@ function startNameEdit(assignment, btnEl, listEl) {
 		const oldName = assignment.name;
 		const corrected = correctCase(newName);
 		assignment.name = corrected;
+		delete assignment.skipMatch;
 		renderEditableAssignments(listEl);
 		rebuildNight0Checks();
 		if (oldName !== corrected) {
