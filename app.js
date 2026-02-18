@@ -8,6 +8,7 @@ const GHOST_NAME = 'Ghost';
 let currentAssignments = null;
 let currentFormals = null;
 let knownPlayers = [];
+let playerRankMap = new Map();
 let nightActions = [];
 let vigiHasShot = false;
 let dayVotes = {};
@@ -618,6 +619,7 @@ async function submitResults() {
 			night0_kills: n0,
 		});
 
+		await loadPlayerNames();
 		renderResults(result);
 		showPanel('panel-results');
 		showToast(`Game ${result.game_id} recorded`, true);
@@ -634,10 +636,6 @@ function renderResults(result) {
 	const tbody = $('#results-table tbody');
 	tbody.innerHTML = '';
 
-	const rated = result.players.filter(p => p.new_rating !== undefined);
-	rated.sort((a, b) => b.new_rating - a.new_rating);
-	const rankMap = new Map();
-	rated.forEach((p, i) => rankMap.set(p.name, i + 1));
 	const medals = { 1: '\u{1F947}', 2: '\u{1F948}', 3: '\u{1F949}' };
 	const rankClass = (r) => {
 		if (r === 1) return 'rank-gold';
@@ -667,8 +665,8 @@ function renderResults(result) {
 			const changeClass = p.rate_change >= 0 ? 'change-pos' : 'change-neg';
 			const resultClass = p.result === 'Win' ? 'change-pos' : 'change-neg';
 			const sign = p.rate_change >= 0 ? '+' : '';
-			const rank = rankMap.get(p.name) ?? '-';
-			const rc = rankClass(rank);
+			const rank = playerRankMap.get(p.name) ?? '-';
+			const rc = typeof rank === 'number' ? rankClass(rank) : '';
 			tr.innerHTML = `
       <td class="${rc}">${medals[rank] || rank}</td>
       <td>${p.name}</td>
@@ -711,10 +709,14 @@ async function loadLastGame() {
 			return;
 		}
 
-		const rated = data.game.players.filter(p => p.new_rating !== undefined);
-		rated.sort((a, b) => b.new_rating - a.new_rating);
-		const rankMap = new Map();
-		rated.forEach((p, i) => rankMap.set(p.player, i + 1));
+		const medals = { 1: '\u{1F947}', 2: '\u{1F948}', 3: '\u{1F949}' };
+		const rankClass = (r) => {
+			if (r === 1) return 'rank-gold';
+			if (r === 2) return 'rank-silver';
+			if (r === 3) return 'rank-bronze';
+			if (r <= 15) return 'rank-top15';
+			return '';
+		};
 
 		let html = `<p><strong>Game #${data.game.game_id}</strong></p>`;
 		html += `<table><thead><tr>
@@ -737,9 +739,10 @@ async function loadLastGame() {
 				const changeClass = p.rate_change >= 0 ? 'change-pos' : 'change-neg';
 				const resultClass = p.result === 'Win' ? 'change-pos' : 'change-neg';
 				const sign = p.rate_change >= 0 ? '+' : '';
-				const rank = rankMap.get(p.player) ?? '-';
+				const rank = playerRankMap.get(p.player) ?? '-';
+				const rc = typeof rank === 'number' ? rankClass(rank) : '';
 				html += `<tr>
-        <td>${rank}</td>
+        <td class="${rc}">${medals[rank] || rank}</td>
         <td>${p.player}</td>
         <td class="${alignClass}">${p.alignment}</td>
         <td class="${resultClass}">${p.result}</td>
@@ -770,6 +773,7 @@ async function undoLastGame() {
 	try {
 		const result = await api('undoLastGame');
 		showToast(`Game ${result.undone_game_id} undone (${result.players_restored.length} players restored)`, true);
+		await loadPlayerNames();
 		await loadLastGame();
 	} catch (e) {
 		showToast(e.message);
@@ -799,6 +803,9 @@ async function loadPlayerNames() {
 	try {
 		const data = await api('getPlayers');
 		knownPlayers = data.players.map((p) => p.name);
+		const byRating = [...data.players].sort((a, b) => b.rating - a.rating);
+		playerRankMap = new Map();
+		byRating.forEach((p, i) => playerRankMap.set(p.name, i + 1));
 	} catch (e) {
 		// Non-critical, autocomplete just won't work
 	}
@@ -1502,6 +1509,5 @@ document.addEventListener('DOMContentLoaded', () => {
 		r.addEventListener('change', updateRatedPreview);
 	});
 
-	loadLastGame();
-	loadPlayerNames();
+	loadPlayerNames().then(() => loadLastGame());
 });
