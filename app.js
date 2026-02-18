@@ -199,7 +199,8 @@ function doRandomize() {
 		const names = validateNames(raw);
 		currentAssignments = randomize(names);
 		currentFormals = randomizeFormals();
-		renderAssignments(currentAssignments, $('#assignments-list'));
+		autoMatchNames();
+		renderEditableAssignments($('#assignments-list'));
 		renderFormals(currentFormals, $('#formals-schedule'));
 		$('#assignments-display').classList.remove('hidden');
 	} catch (e) {
@@ -324,8 +325,7 @@ function findClosestPlayer(name) {
 
 // --- Editable name rendering for record panel ---
 
-function renderEditableAssignments() {
-	const listEl = $('#locked-list');
+function renderEditableAssignments(listEl = $('#locked-list')) {
 	listEl.innerHTML = '';
 	for (const a of currentAssignments) {
 		const li = document.createElement('li');
@@ -344,7 +344,7 @@ function renderEditableAssignments() {
 			nameBtn.className = a.role === 'Mafia' ? 'name-btn mafia' : 'name-btn town';
 			nameBtn.textContent = a.name;
 			nameBtn.title = 'Click to edit name';
-			nameBtn.addEventListener('click', () => startNameEdit(a, nameBtn));
+			nameBtn.addEventListener('click', () => startNameEdit(a, nameBtn, listEl));
 			li.appendChild(posSpan);
 			li.appendChild(nameBtn);
 
@@ -361,7 +361,7 @@ function renderEditableAssignments() {
 				sugBtn.addEventListener('click', () => {
 					const oldName = a.name;
 					a.name = suggestion;
-					renderEditableAssignments();
+					renderEditableAssignments(listEl);
 					rebuildNight0Checks();
 					showToast(`Renamed "${oldName}" to "${suggestion}"`, true);
 				});
@@ -382,7 +382,7 @@ function renderEditableAssignments() {
 	}
 }
 
-function startNameEdit(assignment, btnEl) {
+function startNameEdit(assignment, btnEl, listEl) {
 	const wrapper = document.createElement('span');
 	wrapper.className = 'name-edit-wrapper';
 
@@ -444,7 +444,7 @@ function startNameEdit(assignment, btnEl) {
 		const oldName = assignment.name;
 		const corrected = correctCase(newName);
 		assignment.name = corrected;
-		renderEditableAssignments();
+		renderEditableAssignments(listEl);
 		rebuildNight0Checks();
 		if (oldName !== corrected) {
 			showToast(`Renamed "${oldName}" to "${corrected}"`, true);
@@ -538,8 +538,6 @@ function autoMatchNames() {
 // --- Accept & go to record panel ---
 
 function acceptAssignments() {
-	autoMatchNames();
-
 	nightActions = [];
 	vigiHasShot = false;
 	dayVotes = {};
