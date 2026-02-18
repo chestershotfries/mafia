@@ -51,6 +51,25 @@ function renderStatsSummary(summary) {
 	$('#stat-town-pct').textContent = summary.town_win_pct + '%';
 }
 
+// --- Helpers ---
+
+function winPctStyle(pct) {
+	const t = pct / 100;
+	if (t >= 0.5) {
+		const s = (t - 0.5) * 2;
+		const r = Math.round(153 - s * 79);
+		const g = Math.round(153 + s * 4);
+		const b = Math.round(153 - s * 42);
+		return `style="color: rgb(${r},${g},${b})"`;
+	} else {
+		const s = t * 2;
+		const r = Math.round(211 - s * 58);
+		const g = Math.round(47 + s * 106);
+		const b = Math.round(47 + s * 106);
+		return `style="color: rgb(${r},${g},${b})"`;
+	}
+}
+
 // --- Leaderboard ---
 
 function renderLeaderboard(players) {
@@ -89,16 +108,17 @@ function renderLeaderboard(players) {
 		const tr = document.createElement('tr');
 		tr.dataset.player = p.name;
 		if (rank === 15) tr.classList.add('rank-divider');
+		const nameClass = rank <= 3 ? rankClass(rank) : '';
 		tr.innerHTML = `
 			<td class="${rankClass(rank)}">${medals[rank] || rank}</td>
-			<td>${p.name}</td>
+			<td class="${nameClass}">${p.name}</td>
 			<td>${p.rating}</td>
 			<td>${p.total_games}</td>
-			<td>${p.total_win_pct}%</td>
+			<td ${winPctStyle(p.total_win_pct)}>${p.total_win_pct}%</td>
 			<td>${p.mafia_games}</td>
-			<td>${p.mafia_win_pct}%</td>
+			<td ${winPctStyle(p.mafia_win_pct)}>${p.mafia_win_pct}%</td>
 			<td>${p.town_games}</td>
-			<td>${p.town_win_pct}%</td>
+			<td ${winPctStyle(p.town_win_pct)}>${p.town_win_pct}%</td>
 		`;
 		tr.addEventListener('click', () => loadPlayerDetail(p.name));
 		tbody.appendChild(tr);

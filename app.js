@@ -693,9 +693,14 @@ async function loadLastGame() {
 			return;
 		}
 
+		const rated = data.game.players.filter(p => p.new_rating !== undefined);
+		rated.sort((a, b) => b.new_rating - a.new_rating);
+		const rankMap = new Map();
+		rated.forEach((p, i) => rankMap.set(p.player, i + 1));
+
 		let html = `<p><strong>Game #${data.game.game_id}</strong></p>`;
 		html += `<table><thead><tr>
-      <th>Player</th><th>Alignment</th><th>Result</th><th>Change</th>
+      <th>#</th><th>Player</th><th>Alignment</th><th>Result</th><th>Rating</th><th>Change</th>
     </tr></thead><tbody>`;
 
 		for (const p of data.game.players) {
@@ -703,18 +708,24 @@ async function loadLastGame() {
 			const isExcluded = p.result === 'Ghost' || p.result === 'Night Zero';
 			if (isExcluded) {
 				html += `<tr class="excluded-row">
+        <td>-</td>
         <td>${p.player}</td>
         <td class="${alignClass}">${p.alignment}</td>
         <td>${p.result}</td>
+        <td>-</td>
         <td>0</td>
       </tr>`;
 			} else {
 				const changeClass = p.rate_change >= 0 ? 'change-pos' : 'change-neg';
+				const resultClass = p.result === 'Win' ? 'change-pos' : 'change-neg';
 				const sign = p.rate_change >= 0 ? '+' : '';
+				const rank = rankMap.get(p.player) ?? '-';
 				html += `<tr>
+        <td>${rank}</td>
         <td>${p.player}</td>
         <td class="${alignClass}">${p.alignment}</td>
-        <td>${p.result}</td>
+        <td class="${resultClass}">${p.result}</td>
+        <td>${p.new_rating}</td>
         <td class="${changeClass}">${sign}${p.rate_change}</td>
       </tr>`;
 			}
