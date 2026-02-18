@@ -54,6 +54,20 @@ function renderStatsSummary(summary) {
 // --- Leaderboard ---
 
 function renderLeaderboard(players) {
+	// Build rank map based on rating (always descending)
+	const byRating = [...players].sort((a, b) => b.rating - a.rating);
+	const rankMap = new Map();
+	byRating.forEach((p, i) => rankMap.set(p.name, i + 1));
+
+	const medals = { 1: '🥇', 2: '🥈', 3: '🥉' };
+	const rankClass = (r) => {
+		if (r === 1) return 'rank-gold';
+		if (r === 2) return 'rank-silver';
+		if (r === 3) return 'rank-bronze';
+		if (r <= 15) return 'rank-top15';
+		return '';
+	};
+
 	const sorted = [...players].sort((a, b) => {
 		const aVal = a[currentSort.key];
 		const bVal = b[currentSort.key];
@@ -71,9 +85,12 @@ function renderLeaderboard(players) {
 	tbody.innerHTML = '';
 
 	for (const p of sorted) {
+		const rank = rankMap.get(p.name);
 		const tr = document.createElement('tr');
 		tr.dataset.player = p.name;
+		if (rank === 15) tr.classList.add('rank-divider');
 		tr.innerHTML = `
+			<td class="${rankClass(rank)}">${medals[rank] || rank}</td>
 			<td>${p.name}</td>
 			<td>${p.rating}</td>
 			<td>${p.total_games}</td>
