@@ -109,30 +109,6 @@
   border-left: 3px solid var(--accent);
 }
 
-/* Rank column */
-.rank-gold {
-  color: #FFD700;
-  font-weight: 700;
-  font-size: 1.1rem;
-}
-
-.rank-silver {
-  color: #C0C0C0;
-  font-weight: 700;
-  font-size: 1.1rem;
-}
-
-.rank-bronze {
-  color: #CD7F32;
-  font-weight: 700;
-  font-size: 1.1rem;
-}
-
-.rank-top15 {
-  color: var(--accent);
-  font-weight: 600;
-}
-
 .stats-table tr.rank-divider > td {
   border-bottom: 2px solid var(--text-muted);
 }

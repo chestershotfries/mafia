@@ -634,6 +634,19 @@ function renderResults(result) {
 	const tbody = $('#results-table tbody');
 	tbody.innerHTML = '';
 
+	const rated = result.players.filter(p => p.new_rating !== undefined);
+	rated.sort((a, b) => b.new_rating - a.new_rating);
+	const rankMap = new Map();
+	rated.forEach((p, i) => rankMap.set(p.name, i + 1));
+	const medals = { 1: '\u{1F947}', 2: '\u{1F948}', 3: '\u{1F949}' };
+	const rankClass = (r) => {
+		if (r === 1) return 'rank-gold';
+		if (r === 2) return 'rank-silver';
+		if (r === 3) return 'rank-bronze';
+		if (r <= 15) return 'rank-top15';
+		return '';
+	};
+
 	for (const p of result.players) {
 		const tr = document.createElement('tr');
 		const alignClass = p.alignment === 'Mafia' ? 'align-mafia' : 'align-town';
@@ -641,6 +654,7 @@ function renderResults(result) {
 
 		if (isExcluded) {
 			tr.innerHTML = `
+      <td>-</td>
       <td>${p.name}</td>
       <td class="${alignClass}">${p.alignment}</td>
       <td>${p.result}</td>
@@ -651,11 +665,15 @@ function renderResults(result) {
 			tr.classList.add('excluded-row');
 		} else {
 			const changeClass = p.rate_change >= 0 ? 'change-pos' : 'change-neg';
+			const resultClass = p.result === 'Win' ? 'change-pos' : 'change-neg';
 			const sign = p.rate_change >= 0 ? '+' : '';
+			const rank = rankMap.get(p.name) ?? '-';
+			const rc = rankClass(rank);
 			tr.innerHTML = `
+      <td class="${rc}">${medals[rank] || rank}</td>
       <td>${p.name}</td>
       <td class="${alignClass}">${p.alignment}</td>
-      <td>${p.result}</td>
+      <td class="${resultClass}">${p.result}</td>
       <td>${p.old_rating}</td>
       <td>${p.new_rating}</td>
       <td class="${changeClass}">${sign}${p.rate_change}</td>

@@ -746,6 +746,30 @@ textarea:focus {
   display: none;
 }
 
+/* Rank column */
+.rank-gold {
+  color: #FFD700;
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+
+.rank-silver {
+  color: #C0C0C0;
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+
+.rank-bronze {
+  color: #CD7F32;
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+
+.rank-top15 {
+  color: var(--accent);
+  font-weight: 600;
+}
+
 .hidden {
   display: none;
 }
