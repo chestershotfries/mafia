@@ -335,25 +335,25 @@ textarea:focus {
   text-transform: uppercase;
 }
 
-.results-table .change-pos {
+.change-pos {
   color: var(--positive);
   font-weight: 700;
 }
 
-.results-table .change-neg {
+.change-neg {
   color: var(--negative);
   font-weight: 700;
 }
 
-.results-table .align-mafia {
+.align-mafia {
   color: var(--mafia-red);
 }
 
-.results-table .align-town {
+.align-town {
   color: var(--town-blue);
 }
 
-.results-table .excluded-row {
+.excluded-row {
   opacity: 0.5;
 }
 
