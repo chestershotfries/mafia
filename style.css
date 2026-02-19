@@ -554,7 +554,7 @@ textarea:focus {
 }
 
 .dice-input {
-  width: 2.5rem;
+  width: 3rem;
   padding: 0.3rem 0.4rem;
   border: 1px solid var(--border);
   border-radius: var(--radius);
@@ -820,6 +820,41 @@ textarea:focus {
 .rank-top15 {
   color: var(--accent);
   font-weight: 600;
+}
+
+/* Manual player assignment grid */
+.manual-player-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0.75rem 0;
+}
+
+.player-toggle {
+  padding: 0.4rem 0.8rem;
+  border: 2px solid var(--town-blue);
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--town-blue);
+  font-family: inherit;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s, color 0.2s;
+}
+
+.player-toggle:hover {
+  background: rgba(91, 155, 213, 0.15);
+}
+
+.player-toggle.mafia {
+  border-color: var(--mafia-red);
+  background: rgba(196, 30, 58, 0.2);
+  color: var(--mafia-red);
+}
+
+.player-toggle.mafia:hover {
+  background: rgba(196, 30, 58, 0.3);
 }
 
 .hidden {

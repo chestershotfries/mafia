@@ -17,6 +17,10 @@ let playerRankMap = new Map();
 let nightActions = [];
 let vigiHasShot = false;
 let dayVotes = {};
+let gameMode = 'randomize'; // 'randomize' | 'manual' | 'retroactive'
+let manualMafiaSelections = new Set();
+let retroMafiaSelections = new Set();
+let retroNames = [];
 
 const $ = (sel) => document.querySelector(sel);
 const $$ = (sel) => document.querySelectorAll(sel);
@@ -180,6 +184,29 @@ function randomize(names) {
 		assignments.push({ position: i + 7, name, role: 'Town', is_ghost: name === GHOST_NAME });
 	});
 
+	return assignments;
+}
+
+function buildAssignments(names, mafiaNames) {
+	const mafiaSet = new Set(mafiaNames.map((n) => n.toLowerCase()));
+	const townNames = names.filter((n) => !mafiaSet.has(n.toLowerCase()));
+	const numGhosts = 15 - names.length;
+
+	const assignments = [];
+	mafiaNames.forEach((name, i) => {
+		assignments.push({ position: i + 1, name, role: 'Mafia', is_ghost: false });
+	});
+	townNames.forEach((name, i) => {
+		assignments.push({ position: i + 4, name, role: 'Town', is_ghost: false });
+	});
+	for (let i = 0; i < numGhosts; i++) {
+		assignments.push({
+			position: assignments.length + 1,
+			name: GHOST_NAME,
+			role: 'Town',
+			is_ghost: true,
+		});
+	}
 	return assignments;
 }
 
@@ -622,6 +649,170 @@ function acceptAssignments() {
 	saveState();
 }
 
+// --- Manual Setup & Retroactive Entry ---
+
+function renderManualPlayerList(names, containerId, mafiaSet, onChange) {
+	const container = $(`#${containerId}`);
+	container.innerHTML = '';
+	for (const name of names) {
+		const btn = document.createElement('button');
+		btn.type = 'button';
+		btn.className = 'player-toggle' + (mafiaSet.has(name) ? ' mafia' : '');
+		btn.textContent = name;
+		btn.addEventListener('click', () => {
+			if (mafiaSet.has(name)) {
+				mafiaSet.delete(name);
+				btn.classList.remove('mafia');
+			} else if (mafiaSet.size < 3) {
+				mafiaSet.add(name);
+				btn.classList.add('mafia');
+			}
+			onChange();
+		});
+		container.appendChild(btn);
+	}
+}
+
+function doManualSetup() {
+	const raw = $('#names-input').value;
+	try {
+		const names = validateNames(raw);
+		gameMode = 'manual';
+		manualMafiaSelections = new Set();
+
+		$('#assignments-display').classList.add('hidden');
+		$('#retro-form').classList.add('hidden');
+		$('#manual-setup').classList.remove('hidden');
+
+		renderManualPlayerList(names, 'manual-player-list', manualMafiaSelections, () => {
+			$('#mafia-counter').textContent = `${manualMafiaSelections.size}/3 mafia selected`;
+			$('#btn-manual-accept').disabled = manualMafiaSelections.size !== 3;
+			saveState();
+		});
+
+		$('#mafia-counter').textContent = '0/3 mafia selected';
+		$('#btn-manual-accept').disabled = true;
+		saveState();
+	} catch (e) {
+		showToast(e.message);
+	}
+}
+
+function acceptManualSetup() {
+	const raw = $('#names-input').value;
+	const names = validateNames(raw);
+	const mafiaNames = [...manualMafiaSelections];
+
+	currentAssignments = buildAssignments(names, mafiaNames);
+	currentFormals = null;
+	autoMatchNames();
+
+	rollCount = 0;
+	nightActions = [];
+	vigiHasShot = false;
+	dayVotes = {};
+
+	$('#role-reveal-pre').textContent = generateRoleReveal();
+	$('#nights-container').innerHTML = '';
+	addNightSection(0);
+	updateNightButtons();
+
+	$('#manual-setup').classList.add('hidden');
+	showPanel('panel-game');
+	saveState();
+}
+
+function doRetroEntry() {
+	const raw = $('#names-input').value;
+	try {
+		retroNames = validateNames(raw);
+		gameMode = 'retroactive';
+		retroMafiaSelections = new Set();
+
+		$('#assignments-display').classList.add('hidden');
+		$('#manual-setup').classList.add('hidden');
+		$('#retro-form').classList.remove('hidden');
+
+		renderManualPlayerList(retroNames, 'retro-player-list', retroMafiaSelections, () => {
+			updateRetroForm();
+			saveState();
+		});
+
+		$$('input[name="retro-winner"]').forEach((r) => (r.checked = false));
+		buildRetroN0Checks();
+		$('#retro-mafia-counter').textContent = '0/3 mafia selected';
+		$('#retro-rated-preview').textContent = `${retroNames.length} players will be rated`;
+		$('#btn-retro-submit').disabled = true;
+		saveState();
+	} catch (e) {
+		showToast(e.message);
+	}
+}
+
+function buildRetroN0Checks() {
+	const checks = $('#retro-n0-checks');
+	checks.innerHTML = '';
+	for (const name of retroNames) {
+		const label = document.createElement('label');
+		const cb = document.createElement('input');
+		cb.type = 'checkbox';
+		cb.value = name;
+		cb.addEventListener('change', () => { updateRetroForm(); saveState(); });
+		label.appendChild(cb);
+		label.appendChild(document.createTextNode(` ${name}`));
+		checks.appendChild(label);
+	}
+}
+
+function updateRetroForm() {
+	$('#retro-mafia-counter').textContent = `${retroMafiaSelections.size}/3 mafia selected`;
+
+	const n0 = [...$$('#retro-n0-checks input:checked')].map((cb) => cb.value);
+	const rated = retroNames.length - n0.length;
+	$('#retro-rated-preview').textContent = `${rated} players will be rated`;
+
+	const winner = document.querySelector('input[name="retro-winner"]:checked');
+	$('#btn-retro-submit').disabled = !(retroMafiaSelections.size === 3 && winner);
+}
+
+async function submitRetroGame() {
+	const mafiaNames = [...retroMafiaSelections];
+	const winner = document.querySelector('input[name="retro-winner"]:checked');
+	if (!winner || mafiaNames.length !== 3) return;
+
+	const n0 = [...$$('#retro-n0-checks input:checked')].map((cb) => cb.value);
+
+	currentAssignments = buildAssignments(retroNames, mafiaNames);
+	autoMatchNames();
+
+	const confirmed = await confirmAction(
+		`Record past game: <strong>${winner.value} Win</strong>` +
+		(n0.length ? `<br>Night 0 kills: ${n0.join(', ')}` : '') +
+		'<br><br>This will update the Google Sheet. Continue?'
+	);
+	if (!confirmed) return;
+
+	$('#btn-retro-submit').disabled = true;
+	try {
+		const result = await api('recordGame', {
+			assignments: currentAssignments,
+			winner: winner.value,
+			night0_kills: n0,
+		});
+
+		clearSavedState();
+		gameMode = 'randomize';
+		await loadPlayerNames();
+		renderResults(result);
+		showPanel('panel-results');
+		showToast(`Game ${result.game_id} recorded`, true);
+		loadLastGame();
+	} catch (e) {
+		showToast(e.message);
+		$('#btn-retro-submit').disabled = false;
+	}
+}
+
 // --- Update rated preview ---
 
 function updateRatedPreview() {
@@ -862,8 +1053,14 @@ function newGame() {
 	nightActions = [];
 	vigiHasShot = false;
 	dayVotes = {};
+	gameMode = 'randomize';
+	manualMafiaSelections = new Set();
+	retroMafiaSelections = new Set();
+	retroNames = [];
 	$('#names-input').value = '';
 	$('#assignments-display').classList.add('hidden');
+	$('#manual-setup').classList.add('hidden');
+	$('#retro-form').classList.add('hidden');
 	$('#nights-container').innerHTML = '';
 	countNames();
 	showPanel('panel-randomize');
@@ -1541,7 +1738,14 @@ function addNightSection(nightNum) {
 
 function continueToRecord() {
 	renderEditableAssignments();
-	if (currentFormals) renderFormals(currentFormals, $('#locked-formals'));
+	if (currentFormals) {
+		renderFormals(currentFormals, $('#locked-formals'));
+		$('#locked-formals').previousElementSibling.classList.remove('hidden');
+		$('#locked-formals').classList.remove('hidden');
+	} else {
+		$('#locked-formals').previousElementSibling.classList.add('hidden');
+		$('#locked-formals').classList.add('hidden');
+	}
 	rebuildNight0Checks();
 
 	// Auto-check N0 mafia kill targets
@@ -1570,13 +1774,25 @@ function continueToRecord() {
 function saveState() {
 	const state = {
 		currentAssignments, currentFormals, nightActions,
-		dayVotes, vigiHasShot, rollCount,
+		dayVotes, vigiHasShot, rollCount, gameMode,
 		activePanel: $('.panel:not(.hidden)')?.id,
 	};
 	const n0 = [...$$('#night0-checks input:checked')].map((cb) => cb.value);
 	if (n0.length) state.n0Checks = n0;
 	const winRadio = $('input[name="winner"]:checked');
 	if (winRadio) state.winner = winRadio.value;
+
+	if (gameMode === 'manual') {
+		state.manualMafiaSelections = [...manualMafiaSelections];
+		try { state.manualNames = validateNames($('#names-input').value); } catch (_) {}
+	} else if (gameMode === 'retroactive') {
+		state.retroMafiaSelections = [...retroMafiaSelections];
+		state.retroNames = retroNames;
+		const retroWinner = document.querySelector('input[name="retro-winner"]:checked');
+		if (retroWinner) state.retroWinner = retroWinner.value;
+		state.retroN0Checks = [...$$('#retro-n0-checks input:checked')].map((cb) => cb.value);
+	}
+
 	localStorage.setItem('mafiaGameState', JSON.stringify(state));
 }
 
@@ -1631,6 +1847,54 @@ async function restoreState() {
 
 	try {
 		const state = JSON.parse(raw);
+		gameMode = state.gameMode || 'randomize';
+
+		// Restore manual/retro state on randomize panel even without assignments
+		if (state.activePanel === 'panel-randomize' && gameMode === 'manual' && state.manualNames) {
+			manualMafiaSelections = new Set(state.manualMafiaSelections || []);
+			$('#names-input').value = state.manualNames.join('\n');
+			countNames();
+			$('#assignments-display').classList.add('hidden');
+			$('#retro-form').classList.add('hidden');
+			$('#manual-setup').classList.remove('hidden');
+			renderManualPlayerList(state.manualNames, 'manual-player-list', manualMafiaSelections, () => {
+				$('#mafia-counter').textContent = `${manualMafiaSelections.size}/3 mafia selected`;
+				$('#btn-manual-accept').disabled = manualMafiaSelections.size !== 3;
+				saveState();
+			});
+			$('#mafia-counter').textContent = `${manualMafiaSelections.size}/3 mafia selected`;
+			$('#btn-manual-accept').disabled = manualMafiaSelections.size !== 3;
+			showPanel('panel-randomize');
+			return true;
+		}
+
+		if (state.activePanel === 'panel-randomize' && gameMode === 'retroactive' && state.retroNames) {
+			retroNames = state.retroNames;
+			retroMafiaSelections = new Set(state.retroMafiaSelections || []);
+			$('#names-input').value = retroNames.join('\n');
+			countNames();
+			$('#assignments-display').classList.add('hidden');
+			$('#manual-setup').classList.add('hidden');
+			$('#retro-form').classList.remove('hidden');
+			renderManualPlayerList(retroNames, 'retro-player-list', retroMafiaSelections, () => {
+				updateRetroForm();
+				saveState();
+			});
+			buildRetroN0Checks();
+			if (state.retroN0Checks) {
+				$$('#retro-n0-checks input[type="checkbox"]').forEach((cb) => {
+					cb.checked = state.retroN0Checks.includes(cb.value);
+				});
+			}
+			if (state.retroWinner) {
+				const radio = $(`input[name="retro-winner"][value="${state.retroWinner}"]`);
+				if (radio) radio.checked = true;
+			}
+			updateRetroForm();
+			showPanel('panel-randomize');
+			return true;
+		}
+
 		if (!state.currentAssignments) return false;
 
 		currentAssignments = state.currentAssignments;
@@ -1644,7 +1908,7 @@ async function restoreState() {
 
 		if (panel === 'panel-randomize') {
 			renderEditableAssignments($('#assignments-list'));
-			renderFormals(currentFormals, $('#formals-schedule'));
+			if (currentFormals) renderFormals(currentFormals, $('#formals-schedule'));
 			$('#roll-count').textContent = rollCount;
 			$('#assignments-display').classList.remove('hidden');
 			showPanel('panel-randomize');
@@ -1715,6 +1979,33 @@ document.addEventListener('DOMContentLoaded', () => {
 	$$('input[name="winner"]').forEach((r) => {
 		r.addEventListener('change', () => {
 			updateRatedPreview();
+			saveState();
+		});
+	});
+
+	// Manual Setup
+	$('#btn-manual').addEventListener('click', doManualSetup);
+	$('#btn-manual-cancel').addEventListener('click', () => {
+		$('#manual-setup').classList.add('hidden');
+		gameMode = 'randomize';
+		manualMafiaSelections = new Set();
+		saveState();
+	});
+	$('#btn-manual-accept').addEventListener('click', acceptManualSetup);
+
+	// Retroactive Entry
+	$('#btn-retro').addEventListener('click', doRetroEntry);
+	$('#btn-retro-cancel').addEventListener('click', () => {
+		$('#retro-form').classList.add('hidden');
+		gameMode = 'randomize';
+		retroMafiaSelections = new Set();
+		retroNames = [];
+		saveState();
+	});
+	$('#btn-retro-submit').addEventListener('click', submitRetroGame);
+	$$('input[name="retro-winner"]').forEach((r) => {
+		r.addEventListener('change', () => {
+			updateRetroForm();
 			saveState();
 		});
 	});
