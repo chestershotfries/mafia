@@ -20,6 +20,7 @@ let dayVotes = {};
 let gameMode = 'randomize'; // 'randomize' | 'manual' | 'retroactive'
 let manualRoleMap = new Map(); // name → 'Mafia'|'Cop'|'Medic'|'Vigi'
 let retroRoleMap = new Map();
+let manualNames = [];
 let retroNames = [];
 let manualSkipMatch = new Set();
 let retroSkipMatch = new Set();
@@ -324,7 +325,8 @@ function levenshtein(a, b) {
 	return dp[m][n];
 }
 
-function getUsedNames() {
+function getUsedNames(names) {
+	if (names) return new Set(names.map((n) => n.toLowerCase()));
 	return new Set(
 		currentAssignments
 			.filter((a) => !a.is_ghost)
@@ -368,7 +370,7 @@ function abbreviationScore(query, name) {
 	return score;
 }
 
-function findClosestPlayer(name) {
+function findClosestPlayer(name, usedNamesOverride) {
 	if (!knownPlayers.length) return null;
 	const lower = name.toLowerCase();
 
@@ -377,7 +379,7 @@ function findClosestPlayer(name) {
 	// abbreviations of a longer canonical player name.
 	if (name.length > 5 && knownPlayers.some((p) => p.toLowerCase() === lower)) return null;
 
-	const used = getUsedNames();
+	const used = usedNamesOverride || getUsedNames();
 	const candidates = knownPlayers.filter((p) => !used.has(p.toLowerCase()));
 	if (!candidates.length) return null;
 
@@ -497,26 +499,23 @@ function renderEditableAssignments(listEl = $('#locked-list')) {
 	}
 }
 
-function startNameEdit(assignment, btnEl, listEl) {
+function createNameEditInput(currentName, getUsedSet, onFinish) {
 	const wrapper = document.createElement('span');
 	wrapper.className = 'name-edit-wrapper';
 
 	const input = document.createElement('input');
 	input.type = 'text';
 	input.className = 'name-edit-input';
-	input.value = assignment.name;
+	input.value = currentName;
 
 	const suggList = document.createElement('ul');
 	suggList.className = 'name-suggestions hidden';
 
 	wrapper.appendChild(input);
 	wrapper.appendChild(suggList);
-	btnEl.replaceWith(wrapper);
-
-	input.focus();
-	input.select();
 
 	let selectedIdx = -1;
+	let finished = false;
 
 	function showSuggestions(query) {
 		suggList.innerHTML = '';
@@ -526,8 +525,8 @@ function startNameEdit(assignment, btnEl, listEl) {
 			return;
 		}
 		const q = query.toLowerCase();
-		const used = getUsedNames();
-		used.delete(assignment.name.toLowerCase());
+		const used = getUsedSet();
+		used.delete(currentName.toLowerCase());
 		const matches = knownPlayers
 			.filter((p) => {
 				const pl = p.toLowerCase();
@@ -556,16 +555,9 @@ function startNameEdit(assignment, btnEl, listEl) {
 	}
 
 	function finishEdit(newName) {
-		const oldName = assignment.name;
-		const corrected = correctCase(newName);
-		assignment.name = corrected;
-		delete assignment.skipMatch;
-		renderEditableAssignments(listEl);
-		rebuildNight0Checks();
-		saveState();
-		if (oldName !== corrected) {
-			showToast(`Renamed "${oldName}" to "${corrected}"`, true);
-		}
+		if (finished) return;
+		finished = true;
+		onFinish(newName);
 	}
 
 	input.addEventListener('input', () => showSuggestions(input.value));
@@ -585,16 +577,80 @@ function startNameEdit(assignment, btnEl, listEl) {
 			if (selectedIdx >= 0 && items[selectedIdx]) {
 				finishEdit(items[selectedIdx].textContent);
 			} else {
-				finishEdit(input.value.trim() || assignment.name);
+				finishEdit(input.value.trim() || currentName);
 			}
 		} else if (e.key === 'Escape') {
-			finishEdit(assignment.name);
+			finishEdit(currentName);
 		}
 	});
 
 	input.addEventListener('blur', () => {
-		setTimeout(() => finishEdit(input.value.trim() || assignment.name), 150);
+		setTimeout(() => finishEdit(input.value.trim() || currentName), 150);
 	});
+
+	return wrapper;
+}
+
+function startNameEdit(assignment, btnEl, listEl) {
+	const wrapper = createNameEditInput(
+		assignment.name,
+		() => getUsedNames(),
+		(newName) => {
+			const oldName = assignment.name;
+			const corrected = correctCase(newName);
+			assignment.name = corrected;
+			delete assignment.skipMatch;
+			renderEditableAssignments(listEl);
+			rebuildNight0Checks();
+			saveState();
+			if (oldName !== corrected) {
+				showToast(`Renamed "${oldName}" to "${corrected}"`, true);
+			}
+		}
+	);
+	btnEl.replaceWith(wrapper);
+	wrapper.querySelector('input').focus();
+	wrapper.querySelector('input').select();
+}
+
+function startManualNameEdit(nameIndex, names, btnEl, containerId, roleMap, onChange, skipMatchSet) {
+	const wrapper = createNameEditInput(
+		names[nameIndex],
+		() => getUsedNames(names),
+		(newName) => {
+			const oldName = names[nameIndex];
+			const corrected = correctCase(newName);
+			if (oldName !== corrected) {
+				// Re-key roleMap
+				if (roleMap.has(oldName)) {
+					roleMap.set(corrected, roleMap.get(oldName));
+					roleMap.delete(oldName);
+				}
+				// Update skipMatch set
+				if (skipMatchSet.has(oldName)) {
+					skipMatchSet.delete(oldName);
+					skipMatchSet.add(corrected);
+				}
+				names[nameIndex] = corrected;
+				// For retro: preserve N0 checkbox state across rebuild
+				if (containerId === 'retro-player-list') {
+					const checkedN0 = [...$$('#retro-n0-checks input:checked')].map((cb) => cb.value);
+					const updatedChecked = checkedN0.map((n) => n === oldName ? corrected : n);
+					buildRetroN0Checks();
+					$$('#retro-n0-checks input[type="checkbox"]').forEach((cb) => {
+						cb.checked = updatedChecked.includes(cb.value);
+					});
+				}
+				showToast(`Renamed "${oldName}" to "${corrected}"`, true);
+			}
+			renderManualPlayerList(names, containerId, roleMap, onChange, skipMatchSet);
+			onChange();
+			saveState();
+		}
+	);
+	btnEl.replaceWith(wrapper);
+	wrapper.querySelector('input').focus();
+	wrapper.querySelector('input').select();
 }
 
 function rebuildNight0Checks() {
@@ -687,57 +743,137 @@ function isRoleSelectionComplete(roleMap) {
 	return c.Mafia === 3 && c.Cop === 1 && c.Medic === 1 && c.Vigi === 1;
 }
 
-function renderManualPlayerList(names, containerId, roleMap, onChange) {
+function renderManualPlayerList(names, containerId, roleMap, onChange, skipMatchSet) {
 	const container = $(`#${containerId}`);
 	container.innerHTML = '';
-	for (const name of names) {
-		const btn = document.createElement('button');
-		btn.type = 'button';
+	const used = getUsedNames(names);
+
+	for (let i = 0; i < names.length; i++) {
+		const name = names[i];
+		const item = document.createElement('div');
+		item.className = 'manual-player-item';
+
+		// Name button — click to inline edit
+		const nameBtn = document.createElement('button');
+		nameBtn.type = 'button';
+		nameBtn.className = 'player-name-btn';
+		nameBtn.textContent = name;
+		nameBtn.title = 'Click to edit name';
+		nameBtn.addEventListener('click', () => {
+			startManualNameEdit(i, names, nameBtn, containerId, roleMap, onChange, skipMatchSet);
+		});
+		item.appendChild(nameBtn);
+
+		// Name matching badges/suggestions
+		const exactMatch = knownPlayers.some((p) => p.toLowerCase() === name.toLowerCase());
+		const suggestion = skipMatchSet.has(name) ? null : findClosestPlayer(name, used);
+
+		if (skipMatchSet.has(name)) {
+			const badge = document.createElement('span');
+			badge.className = 'name-match-badge new-player';
+			badge.textContent = 'new player';
+			item.appendChild(badge);
+		} else if (suggestion) {
+			const sugBtn = document.createElement('button');
+			sugBtn.type = 'button';
+			sugBtn.className = 'name-suggestion-btn';
+			sugBtn.innerHTML = `&rarr; ${suggestion}?`;
+			sugBtn.title = `Rename to "${suggestion}"`;
+			sugBtn.addEventListener('click', () => {
+				const oldName = names[i];
+				if (roleMap.has(oldName)) {
+					roleMap.set(suggestion, roleMap.get(oldName));
+					roleMap.delete(oldName);
+				}
+				names[i] = suggestion;
+				if (containerId === 'retro-player-list') {
+					const checkedN0 = [...$$('#retro-n0-checks input:checked')].map((cb) => cb.value);
+					const updatedChecked = checkedN0.map((n) => n === oldName ? suggestion : n);
+					buildRetroN0Checks();
+					$$('#retro-n0-checks input[type="checkbox"]').forEach((cb) => {
+						cb.checked = updatedChecked.includes(cb.value);
+					});
+				}
+				renderManualPlayerList(names, containerId, roleMap, onChange, skipMatchSet);
+				onChange();
+				saveState();
+				showToast(`Renamed "${oldName}" to "${suggestion}"`, true);
+			});
+			item.appendChild(sugBtn);
+		} else if (exactMatch) {
+			const badge = document.createElement('span');
+			badge.className = 'name-match-badge matched';
+			badge.textContent = 'matched';
+			item.appendChild(badge);
+
+			const notBtn = document.createElement('button');
+			notBtn.type = 'button';
+			notBtn.className = 'name-notmatch-btn';
+			notBtn.textContent = 'not them?';
+			notBtn.title = 'Mark as a different player with the same name';
+			notBtn.addEventListener('click', () => {
+				skipMatchSet.add(name);
+				startManualNameEdit(i, names, nameBtn, containerId, roleMap, onChange, skipMatchSet);
+			});
+			item.appendChild(notBtn);
+		} else {
+			const badge = document.createElement('span');
+			badge.className = 'name-match-badge new-player';
+			badge.textContent = 'new player';
+			item.appendChild(badge);
+		}
+
+		// Role button — click to cycle role
+		const roleBtn = document.createElement('button');
+		roleBtn.type = 'button';
 		const currentRole = roleMap.get(name) || 'Town';
-		btn.className = 'player-toggle' + (ROLE_CSS[currentRole] ? ` ${ROLE_CSS[currentRole]}` : '');
-		btn.textContent = currentRole === 'Town' ? name : `${name} (${currentRole})`;
-		btn.addEventListener('click', () => {
+		roleBtn.className = 'player-toggle' + (ROLE_CSS[currentRole] ? ` ${ROLE_CSS[currentRole]}` : '');
+		roleBtn.textContent = currentRole;
+		roleBtn.addEventListener('click', () => {
 			const role = roleMap.get(name) || 'Town';
 			const idx = ROLE_CYCLE.indexOf(role);
-			// Find next available role in cycle
 			for (let step = 1; step <= ROLE_CYCLE.length; step++) {
 				const next = ROLE_CYCLE[(idx + step) % ROLE_CYCLE.length];
 				if (next === 'Town') {
 					roleMap.delete(name);
-					btn.className = 'player-toggle';
-					btn.textContent = name;
+					roleBtn.className = 'player-toggle';
+					roleBtn.textContent = 'Town';
 					break;
 				}
 				const counts = getRoleCounts(roleMap);
 				if (counts[next] < ROLE_LIMITS[next]) {
 					roleMap.set(name, next);
-					btn.className = 'player-toggle ' + ROLE_CSS[next];
-					btn.textContent = `${name} (${next})`;
+					roleBtn.className = 'player-toggle ' + ROLE_CSS[next];
+					roleBtn.textContent = next;
 					break;
 				}
 			}
 			onChange();
 		});
-		container.appendChild(btn);
+		item.appendChild(roleBtn);
+
+		container.appendChild(item);
 	}
 }
 
 function doManualSetup() {
 	const raw = $('#names-input').value;
 	try {
-		const names = validateNames(raw);
+		manualNames = validateNames(raw);
+		for (let i = 0; i < manualNames.length; i++) manualNames[i] = correctCase(manualNames[i]);
 		gameMode = 'manual';
 		manualRoleMap = new Map();
+		manualSkipMatch = new Set();
 
 		$('#assignments-display').classList.add('hidden');
 		$('#retro-form').classList.add('hidden');
 		$('#manual-setup').classList.remove('hidden');
 
-		renderManualPlayerList(names, 'manual-player-list', manualRoleMap, () => {
+		renderManualPlayerList(manualNames, 'manual-player-list', manualRoleMap, () => {
 			$('#mafia-counter').textContent = roleCounterText(manualRoleMap);
 			$('#btn-manual-accept').disabled = !isRoleSelectionComplete(manualRoleMap);
 			saveState();
-		});
+		}, manualSkipMatch);
 
 		$('#mafia-counter').textContent = roleCounterText(manualRoleMap);
 		$('#btn-manual-accept').disabled = true;
@@ -748,10 +884,7 @@ function doManualSetup() {
 }
 
 function acceptManualSetup() {
-	const raw = $('#names-input').value;
-	const names = validateNames(raw);
-
-	currentAssignments = buildAssignments(names, manualRoleMap);
+	currentAssignments = buildAssignments(manualNames, manualRoleMap);
 	currentFormals = null;
 	autoMatchNames();
 
@@ -774,8 +907,10 @@ function doRetroEntry() {
 	const raw = $('#names-input').value;
 	try {
 		retroNames = validateNames(raw);
+		for (let i = 0; i < retroNames.length; i++) retroNames[i] = correctCase(retroNames[i]);
 		gameMode = 'retroactive';
 		retroRoleMap = new Map();
+		retroSkipMatch = new Set();
 
 		$('#assignments-display').classList.add('hidden');
 		$('#manual-setup').classList.add('hidden');
@@ -784,7 +919,7 @@ function doRetroEntry() {
 		renderManualPlayerList(retroNames, 'retro-player-list', retroRoleMap, () => {
 			updateRetroForm();
 			saveState();
-		});
+		}, retroSkipMatch);
 
 		$$('input[name="retro-winner"]').forEach((r) => (r.checked = false));
 		buildRetroN0Checks();
@@ -1103,7 +1238,10 @@ function newGame() {
 	gameMode = 'randomize';
 	manualRoleMap = new Map();
 	retroRoleMap = new Map();
+	manualNames = [];
 	retroNames = [];
+	manualSkipMatch = new Set();
+	retroSkipMatch = new Set();
 	$('#names-input').value = '';
 	$('#assignments-display').classList.add('hidden');
 	$('#manual-setup').classList.add('hidden');
@@ -1833,9 +1971,11 @@ function saveState() {
 
 	if (gameMode === 'manual') {
 		state.manualRoleMap = [...manualRoleMap];
-		try { state.manualNames = validateNames($('#names-input').value); } catch (_) {}
+		state.manualSkipMatch = [...manualSkipMatch];
+		state.manualNames = manualNames;
 	} else if (gameMode === 'retroactive') {
 		state.retroRoleMap = [...retroRoleMap];
+		state.retroSkipMatch = [...retroSkipMatch];
 		state.retroNames = retroNames;
 		const retroWinner = document.querySelector('input[name="retro-winner"]:checked');
 		if (retroWinner) state.retroWinner = retroWinner.value;
@@ -1900,17 +2040,19 @@ async function restoreState() {
 
 		// Restore manual/retro state on randomize panel even without assignments
 		if (state.activePanel === 'panel-randomize' && gameMode === 'manual' && state.manualNames) {
+			manualNames = state.manualNames;
 			manualRoleMap = new Map(state.manualRoleMap || []);
-			$('#names-input').value = state.manualNames.join('\n');
+			manualSkipMatch = new Set(state.manualSkipMatch || []);
+			$('#names-input').value = manualNames.join('\n');
 			countNames();
 			$('#assignments-display').classList.add('hidden');
 			$('#retro-form').classList.add('hidden');
 			$('#manual-setup').classList.remove('hidden');
-			renderManualPlayerList(state.manualNames, 'manual-player-list', manualRoleMap, () => {
+			renderManualPlayerList(manualNames, 'manual-player-list', manualRoleMap, () => {
 				$('#mafia-counter').textContent = roleCounterText(manualRoleMap);
 				$('#btn-manual-accept').disabled = !isRoleSelectionComplete(manualRoleMap);
 				saveState();
-			});
+			}, manualSkipMatch);
 			$('#mafia-counter').textContent = roleCounterText(manualRoleMap);
 			$('#btn-manual-accept').disabled = !isRoleSelectionComplete(manualRoleMap);
 			showPanel('panel-randomize');
@@ -1920,6 +2062,7 @@ async function restoreState() {
 		if (state.activePanel === 'panel-randomize' && gameMode === 'retroactive' && state.retroNames) {
 			retroNames = state.retroNames;
 			retroRoleMap = new Map(state.retroRoleMap || []);
+			retroSkipMatch = new Set(state.retroSkipMatch || []);
 			$('#names-input').value = retroNames.join('\n');
 			countNames();
 			$('#assignments-display').classList.add('hidden');
@@ -1928,7 +2071,7 @@ async function restoreState() {
 			renderManualPlayerList(retroNames, 'retro-player-list', retroRoleMap, () => {
 				updateRetroForm();
 				saveState();
-			});
+			}, retroSkipMatch);
 			buildRetroN0Checks();
 			if (state.retroN0Checks) {
 				$$('#retro-n0-checks input[type="checkbox"]').forEach((cb) => {

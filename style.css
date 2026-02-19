@@ -830,6 +830,29 @@ textarea:focus {
 	margin: 0.75rem 0;
 }
 
+.manual-player-item {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.25rem;
+}
+
+.player-name-btn {
+	background: none;
+	border: 1px dashed var(--border);
+	border-radius: var(--radius);
+	padding: 0.2rem 0.4rem;
+	font-family: inherit;
+	font-size: 0.95rem;
+	cursor: pointer;
+	color: var(--text);
+	transition: border-color 0.2s, background 0.2s;
+}
+
+.player-name-btn:hover {
+	border-color: var(--text);
+	background: rgba(255, 255, 255, 0.05);
+}
+
 .player-toggle {
 	padding: 0.4rem 0.8rem;
 	border: 2px solid var(--town-blue);
