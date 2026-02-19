@@ -1972,6 +1972,12 @@ document.addEventListener('DOMContentLoaded', () => {
 	$('#btn-back').addEventListener('click', () => showPanel('panel-game'));
 	$('#btn-submit').addEventListener('click', submitResults);
 	$('#btn-new-game').addEventListener('click', newGame);
+	$('#btn-new-game-2').addEventListener('click', async () => {
+		if (await confirmAction('Discard current game and start fresh?')) newGame();
+	});
+	$('#btn-new-game-3').addEventListener('click', async () => {
+		if (await confirmAction('Discard current game and start fresh?')) newGame();
+	});
 	$('#btn-continue-record').addEventListener('click', continueToRecord);
 	$('.container').addEventListener('click', handleCopyClick);
 	$('#btn-undo-last')?.addEventListener('click', undoLastGame);
