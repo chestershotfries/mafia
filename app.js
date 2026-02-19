@@ -21,6 +21,8 @@ let gameMode = 'randomize'; // 'randomize' | 'manual' | 'retroactive'
 let manualRoleMap = new Map(); // name → 'Mafia'|'Cop'|'Medic'|'Vigi'
 let retroRoleMap = new Map();
 let retroNames = [];
+let manualSkipMatch = new Set();
+let retroSkipMatch = new Set();
 
 const ROLE_CYCLE = ['Town', 'Mafia', 'Cop', 'Medic', 'Vigi'];
 const ROLE_LIMITS = { Mafia: 3, Cop: 1, Medic: 1, Vigi: 1 };
@@ -1240,7 +1242,7 @@ function generateNightOutput(nightData) {
 
 	if (nightData.vigiTarget) {
 		output += `vigi: ||shot ${nightData.vigiTarget}||\n`;
-	} else {
+	} else if (nightData.vigiActive) {
 		output += `vigi: ||holstered||\n`;
 	}
 
@@ -1541,6 +1543,7 @@ function refreshConstraints() {
 			}
 		}
 
+		nd.vigiActive = n > 0 && vigiSel && !vigiSel.disabled;
 		updateNightOutput(n);
 	}
 
@@ -1601,6 +1604,7 @@ function addNightSection(nightNum) {
 		medicSave: '',
 		vigiTarget: '',
 		vigiShot: false,
+		vigiActive: false,
 		rngs: '',
 	};
 	nightActions.push(nightData);
