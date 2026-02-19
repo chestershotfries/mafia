@@ -4,6 +4,10 @@
 const SCRIPT_URL = 'https://us-central1-mafia-tracker-310960.cloudfunctions.net/mafia-backend';
 
 const GHOST_NAME = 'Ghost';
+const RANDOM_ORG_API_KEY = '93e00e92-f44b-4b59-993a-309ecee52caa';
+
+let randomPool = [];
+let poolIndex = 0;
 
 let currentAssignments = null;
 let currentFormals = null;
@@ -95,9 +99,49 @@ function validateNames(rawInput) {
 	return names;
 }
 
+// --- Random number pool (random.org with crypto fallback) ---
+
+async function fillRandomPool(n) {
+	try {
+		const res = await fetch('https://api.random.org/json-rpc/4/invoke', {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({
+				jsonrpc: '2.0',
+				method: 'generateDecimalFractions',
+				params: {
+					apiKey: RANDOM_ORG_API_KEY,
+					n,
+					decimalPlaces: 14,
+					replacement: true,
+				},
+				id: 1,
+			}),
+		});
+		const data = await res.json();
+		if (data.error) throw new Error(data.error.message);
+		randomPool = data.result.random.data;
+		poolIndex = 0;
+	} catch (e) {
+		console.warn('random.org unavailable, falling back to crypto:', e.message);
+		randomPool = [];
+		poolIndex = 0;
+		for (let i = 0; i < n; i++) {
+			randomPool.push(crypto.getRandomValues(new Uint32Array(1))[0] / 4294967296);
+		}
+	}
+}
+
+function nextRandom() {
+	if (poolIndex < randomPool.length) {
+		return randomPool[poolIndex++];
+	}
+	return crypto.getRandomValues(new Uint32Array(1))[0] / 4294967296;
+}
+
 function shuffleArray(arr) {
 	for (let i = arr.length - 1; i > 0; i--) {
-		const j = Math.floor(Math.random() * (i + 1));
+		const j = Math.floor(nextRandom() * (i + 1));
 		[arr[i], arr[j]] = [arr[j], arr[i]];
 	}
 	return arr;
@@ -112,7 +156,7 @@ function randomize(names) {
 	let remaining = real.slice(3);
 
 	// Zone 2 (positions 4-6): Town — 0 or 1 ghost, rest real
-	const ghostsInZone2 = Math.min(numGhosts, Math.round(Math.random()));
+	const ghostsInZone2 = Math.min(numGhosts, Math.round(nextRandom()));
 	const ghostsInZone3 = numGhosts - ghostsInZone2;
 
 	const zone2RealCount = 3 - ghostsInZone2;
@@ -142,7 +186,7 @@ function randomize(names) {
 function randomizeFormals() {
 	const formals = [];
 	for (let day = 1; day <= 8; day++) {
-		formals.push({ day, count: Math.floor(Math.random() * 3) });
+		formals.push({ day, count: Math.floor(nextRandom() * 3) });
 	}
 	return formals;
 }
@@ -194,10 +238,13 @@ function renderFormals(formals, el) {
 
 // --- Randomize (now client-side) ---
 
-function doRandomize() {
+async function doRandomize() {
 	const raw = $('#names-input').value;
 	try {
 		const names = validateNames(raw);
+		$('#btn-randomize').disabled = true;
+		await fillRandomPool(50);
+		$('#btn-randomize').disabled = false;
 		currentAssignments = randomize(names);
 		currentFormals = randomizeFormals();
 		autoMatchNames();
@@ -207,6 +254,7 @@ function doRandomize() {
 		$('#roll-count').textContent = rollCount;
 		$('#assignments-display').classList.remove('hidden');
 	} catch (e) {
+		$('#btn-randomize').disabled = false;
 		showToast(e.message);
 	}
 }
@@ -1516,9 +1564,27 @@ document.addEventListener('DOMContentLoaded', () => {
 	$('#btn-randomize').addEventListener('click', doRandomize);
 	$('#btn-reroll').addEventListener('click', doRandomize);
 	$('#btn-accept').addEventListener('click', acceptAssignments);
-	$('#btn-dice').addEventListener('click', () => {
+	$('#btn-dice').addEventListener('click', async () => {
 		const max = parseInt($('#dice-max').value) || 20;
-		$('#dice-result').textContent = Math.floor(Math.random() * max) + 1;
+		$('#btn-dice').disabled = true;
+		try {
+			const res = await fetch('https://api.random.org/json-rpc/4/invoke', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					jsonrpc: '2.0',
+					method: 'generateIntegers',
+					params: { apiKey: RANDOM_ORG_API_KEY, n: 1, min: 1, max, replacement: true },
+					id: 1,
+				}),
+			});
+			const data = await res.json();
+			if (data.error) throw new Error(data.error.message);
+			$('#dice-result').textContent = data.result.random.data[0];
+		} catch (e) {
+			$('#dice-result').textContent = Math.floor(crypto.getRandomValues(new Uint32Array(1))[0] / 4294967296 * max) + 1;
+		}
+		$('#btn-dice').disabled = false;
 	});
 	$('#btn-back').addEventListener('click', () => showPanel('panel-game'));
 	$('#btn-submit').addEventListener('click', submitResults);
