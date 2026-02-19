@@ -253,6 +253,7 @@ async function doRandomize() {
 		rollCount++;
 		$('#roll-count').textContent = rollCount;
 		$('#assignments-display').classList.remove('hidden');
+		saveState();
 	} catch (e) {
 		$('#btn-randomize').disabled = false;
 		showToast(e.message);
@@ -419,6 +420,7 @@ function renderEditableAssignments(listEl = $('#locked-list')) {
 					a.name = suggestion;
 					renderEditableAssignments(listEl);
 					rebuildNight0Checks();
+					saveState();
 					showToast(`Renamed "${oldName}" to "${suggestion}"`, true);
 				});
 				li.appendChild(sugBtn);
@@ -513,6 +515,7 @@ function startNameEdit(assignment, btnEl, listEl) {
 		delete assignment.skipMatch;
 		renderEditableAssignments(listEl);
 		rebuildNight0Checks();
+		saveState();
 		if (oldName !== corrected) {
 			showToast(`Renamed "${oldName}" to "${corrected}"`, true);
 		}
@@ -560,7 +563,7 @@ function rebuildNight0Checks() {
 		cb.type = 'checkbox';
 		cb.value = a.name;
 		cb.checked = previouslyChecked.has(a.name);
-		cb.addEventListener('change', updateRatedPreview);
+		cb.addEventListener('change', () => { updateRatedPreview(); saveState(); });
 		label.appendChild(cb);
 		label.appendChild(document.createTextNode(` ${a.name}`));
 		checks.appendChild(label);
@@ -616,6 +619,7 @@ function acceptAssignments() {
 	updateNightButtons();
 
 	showPanel('panel-game');
+	saveState();
 }
 
 // --- Update rated preview ---
@@ -685,6 +689,7 @@ async function submitResults() {
 			night0_kills: n0,
 		});
 
+		clearSavedState();
 		await loadPlayerNames();
 		renderResults(result);
 		showPanel('panel-results');
@@ -851,6 +856,7 @@ async function undoLastGame() {
 // --- New game ---
 
 function newGame() {
+	clearSavedState();
 	currentAssignments = null;
 	currentFormals = null;
 	nightActions = [];
@@ -1301,6 +1307,7 @@ function refreshConstraints() {
 	recalculateCopResults(0);
 	updateWinIndicator();
 	updateNightButtons();
+	saveState();
 }
 
 function addDaySection(dayNum) {
@@ -1555,6 +1562,118 @@ function continueToRecord() {
 	updateRatedPreview();
 
 	showPanel('panel-record');
+	saveState();
+}
+
+// --- State persistence ---
+
+function saveState() {
+	const state = {
+		currentAssignments, currentFormals, nightActions,
+		dayVotes, vigiHasShot, rollCount,
+		activePanel: $('.panel:not(.hidden)')?.id,
+	};
+	const n0 = [...$$('#night0-checks input:checked')].map((cb) => cb.value);
+	if (n0.length) state.n0Checks = n0;
+	const winRadio = $('input[name="winner"]:checked');
+	if (winRadio) state.winner = winRadio.value;
+	localStorage.setItem('mafiaGameState', JSON.stringify(state));
+}
+
+function clearSavedState() {
+	localStorage.removeItem('mafiaGameState');
+}
+
+function restoreSelectValues(savedNights, savedDayVotes) {
+	for (const nd of savedNights) {
+		const n = nd.night;
+		const mafSel1 = $(`.maf-select[data-night="${n}"][data-kill="0"]`);
+		const mafSel2 = $(`.maf-select[data-night="${n}"][data-kill="1"]`);
+		const copSel = $(`.cop-select[data-night="${n}"]`);
+		const medicSel = $(`.medic-select[data-night="${n}"]`);
+		const vigiSel = $(`.vigi-select[data-night="${n}"]`);
+		if (mafSel1) mafSel1.value = nd.mafKills[0];
+		if (mafSel2) mafSel2.value = nd.mafKills[1];
+		if (copSel) copSel.value = nd.copCheck;
+		if (medicSel) medicSel.value = nd.medicSave;
+		if (vigiSel) vigiSel.value = nd.vigiTarget;
+	}
+	for (const [day, name] of Object.entries(savedDayVotes)) {
+		const sel = $(`.day-vote-select[data-day="${day}"]`);
+		if (sel) sel.value = name;
+	}
+}
+
+function rebuildGamePanel(savedNights, savedDayVotes) {
+	$('#role-reveal-pre').textContent = generateRoleReveal();
+	$('#nights-container').innerHTML = '';
+	nightActions = [];
+	dayVotes = {};
+
+	for (const nd of savedNights) {
+		addNightSection(nd.night);
+	}
+
+	// Overwrite fresh nightActions with saved data
+	for (let i = 0; i < savedNights.length; i++) {
+		Object.assign(nightActions[i], savedNights[i]);
+	}
+	Object.assign(dayVotes, savedDayVotes);
+
+	restoreSelectValues(savedNights, savedDayVotes);
+	refreshConstraints();
+	updateNightButtons();
+}
+
+async function restoreState() {
+	const raw = localStorage.getItem('mafiaGameState');
+	if (!raw) return false;
+
+	try {
+		const state = JSON.parse(raw);
+		if (!state.currentAssignments) return false;
+
+		currentAssignments = state.currentAssignments;
+		currentFormals = state.currentFormals;
+		vigiHasShot = state.vigiHasShot || false;
+		rollCount = state.rollCount || 0;
+
+		const savedNights = state.nightActions || [];
+		const savedDayVotes = state.dayVotes || {};
+		const panel = state.activePanel;
+
+		if (panel === 'panel-randomize') {
+			renderEditableAssignments($('#assignments-list'));
+			renderFormals(currentFormals, $('#formals-schedule'));
+			$('#roll-count').textContent = rollCount;
+			$('#assignments-display').classList.remove('hidden');
+			showPanel('panel-randomize');
+		} else if (panel === 'panel-game') {
+			rebuildGamePanel(savedNights, savedDayVotes);
+			showPanel('panel-game');
+		} else if (panel === 'panel-record') {
+			rebuildGamePanel(savedNights, savedDayVotes);
+			continueToRecord();
+			// Restore N0 checkboxes
+			if (state.n0Checks) {
+				$$('#night0-checks input[type="checkbox"]').forEach((cb) => {
+					cb.checked = state.n0Checks.includes(cb.value);
+				});
+			}
+			// Restore winner radio
+			if (state.winner) {
+				const radio = $(`input[name="winner"][value="${state.winner}"]`);
+				if (radio) radio.checked = true;
+			}
+			updateRatedPreview();
+		}
+
+		return true;
+	} catch (e) {
+		console.warn('Failed to restore state:', e);
+		clearSavedState();
+		return false;
+	}
 }
 
 // --- Event listeners ---
@@ -1594,8 +1713,14 @@ document.addEventListener('DOMContentLoaded', () => {
 	$('#btn-undo-last')?.addEventListener('click', undoLastGame);
 
 	$$('input[name="winner"]').forEach((r) => {
-		r.addEventListener('change', updateRatedPreview);
+		r.addEventListener('change', () => {
+			updateRatedPreview();
+			saveState();
+		});
 	});
 
-	loadPlayerNames().then(() => loadLastGame());
+	loadPlayerNames().then(async () => {
+		const restored = await restoreState();
+		if (!restored) loadLastGame();
+	});
 });
