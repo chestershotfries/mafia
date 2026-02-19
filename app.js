@@ -18,9 +18,13 @@ let nightActions = [];
 let vigiHasShot = false;
 let dayVotes = {};
 let gameMode = 'randomize'; // 'randomize' | 'manual' | 'retroactive'
-let manualMafiaSelections = new Set();
-let retroMafiaSelections = new Set();
+let manualRoleMap = new Map(); // name → 'Mafia'|'Cop'|'Medic'|'Vigi'
+let retroRoleMap = new Map();
 let retroNames = [];
+
+const ROLE_CYCLE = ['Town', 'Mafia', 'Cop', 'Medic', 'Vigi'];
+const ROLE_LIMITS = { Mafia: 3, Cop: 1, Medic: 1, Vigi: 1 };
+const ROLE_CSS = { Town: '', Mafia: 'mafia', Cop: 'cop', Medic: 'medic', Vigi: 'vigi' };
 
 const $ = (sel) => document.querySelector(sel);
 const $$ = (sel) => document.querySelectorAll(sel);
@@ -187,19 +191,33 @@ function randomize(names) {
 	return assignments;
 }
 
-function buildAssignments(names, mafiaNames) {
-	const mafiaSet = new Set(mafiaNames.map((n) => n.toLowerCase()));
-	const townNames = names.filter((n) => !mafiaSet.has(n.toLowerCase()));
+function buildAssignments(names, roleMap) {
+	const mafiaNames = names.filter((n) => roleMap.get(n) === 'Mafia');
+	const cop = names.find((n) => roleMap.get(n) === 'Cop');
+	const medic = names.find((n) => roleMap.get(n) === 'Medic');
+	const vigi = names.find((n) => roleMap.get(n) === 'Vigi');
+	const regularTown = names.filter((n) => !roleMap.has(n) || roleMap.get(n) === 'Town');
 	const numGhosts = 15 - names.length;
 
 	const assignments = [];
+	// Positions 1-3: Mafia
 	mafiaNames.forEach((name, i) => {
 		assignments.push({ position: i + 1, name, role: 'Mafia', is_ghost: false });
 	});
-	townNames.forEach((name, i) => {
-		assignments.push({ position: i + 4, name, role: 'Town', is_ghost: false });
+	// Position 4: Cop, 5: Medic, 6: Vigi (or ghost if unassigned)
+	[cop, medic, vigi].forEach((name, i) => {
+		if (name) {
+			assignments.push({ position: i + 4, name, role: 'Town', is_ghost: false });
+		} else {
+			assignments.push({ position: i + 4, name: GHOST_NAME, role: 'Town', is_ghost: true });
+		}
 	});
-	for (let i = 0; i < numGhosts; i++) {
+	// Positions 7+: regular town
+	regularTown.forEach((name, i) => {
+		assignments.push({ position: i + 7, name, role: 'Town', is_ghost: false });
+	});
+	// Fill remaining with ghosts
+	while (assignments.length < 15) {
 		assignments.push({
 			position: assignments.length + 1,
 			name: GHOST_NAME,
@@ -651,21 +669,50 @@ function acceptAssignments() {
 
 // --- Manual Setup & Retroactive Entry ---
 
-function renderManualPlayerList(names, containerId, mafiaSet, onChange) {
+function getRoleCounts(roleMap) {
+	const counts = { Mafia: 0, Cop: 0, Medic: 0, Vigi: 0 };
+	for (const role of roleMap.values()) counts[role] = (counts[role] || 0) + 1;
+	return counts;
+}
+
+function roleCounterText(roleMap) {
+	const c = getRoleCounts(roleMap);
+	return `${c.Mafia}/3 Mafia · ${c.Cop}/1 Cop · ${c.Medic}/1 Medic · ${c.Vigi}/1 Vigi`;
+}
+
+function isRoleSelectionComplete(roleMap) {
+	const c = getRoleCounts(roleMap);
+	return c.Mafia === 3 && c.Cop === 1 && c.Medic === 1 && c.Vigi === 1;
+}
+
+function renderManualPlayerList(names, containerId, roleMap, onChange) {
 	const container = $(`#${containerId}`);
 	container.innerHTML = '';
 	for (const name of names) {
 		const btn = document.createElement('button');
 		btn.type = 'button';
-		btn.className = 'player-toggle' + (mafiaSet.has(name) ? ' mafia' : '');
-		btn.textContent = name;
+		const currentRole = roleMap.get(name) || 'Town';
+		btn.className = 'player-toggle' + (ROLE_CSS[currentRole] ? ` ${ROLE_CSS[currentRole]}` : '');
+		btn.textContent = currentRole === 'Town' ? name : `${name} (${currentRole})`;
 		btn.addEventListener('click', () => {
-			if (mafiaSet.has(name)) {
-				mafiaSet.delete(name);
-				btn.classList.remove('mafia');
-			} else if (mafiaSet.size < 3) {
-				mafiaSet.add(name);
-				btn.classList.add('mafia');
+			const role = roleMap.get(name) || 'Town';
+			const idx = ROLE_CYCLE.indexOf(role);
+			// Find next available role in cycle
+			for (let step = 1; step <= ROLE_CYCLE.length; step++) {
+				const next = ROLE_CYCLE[(idx + step) % ROLE_CYCLE.length];
+				if (next === 'Town') {
+					roleMap.delete(name);
+					btn.className = 'player-toggle';
+					btn.textContent = name;
+					break;
+				}
+				const counts = getRoleCounts(roleMap);
+				if (counts[next] < ROLE_LIMITS[next]) {
+					roleMap.set(name, next);
+					btn.className = 'player-toggle ' + ROLE_CSS[next];
+					btn.textContent = `${name} (${next})`;
+					break;
+				}
 			}
 			onChange();
 		});
@@ -678,19 +725,19 @@ function doManualSetup() {
 	try {
 		const names = validateNames(raw);
 		gameMode = 'manual';
-		manualMafiaSelections = new Set();
+		manualRoleMap = new Map();
 
 		$('#assignments-display').classList.add('hidden');
 		$('#retro-form').classList.add('hidden');
 		$('#manual-setup').classList.remove('hidden');
 
-		renderManualPlayerList(names, 'manual-player-list', manualMafiaSelections, () => {
-			$('#mafia-counter').textContent = `${manualMafiaSelections.size}/3 mafia selected`;
-			$('#btn-manual-accept').disabled = manualMafiaSelections.size !== 3;
+		renderManualPlayerList(names, 'manual-player-list', manualRoleMap, () => {
+			$('#mafia-counter').textContent = roleCounterText(manualRoleMap);
+			$('#btn-manual-accept').disabled = !isRoleSelectionComplete(manualRoleMap);
 			saveState();
 		});
 
-		$('#mafia-counter').textContent = '0/3 mafia selected';
+		$('#mafia-counter').textContent = roleCounterText(manualRoleMap);
 		$('#btn-manual-accept').disabled = true;
 		saveState();
 	} catch (e) {
@@ -701,9 +748,8 @@ function doManualSetup() {
 function acceptManualSetup() {
 	const raw = $('#names-input').value;
 	const names = validateNames(raw);
-	const mafiaNames = [...manualMafiaSelections];
 
-	currentAssignments = buildAssignments(names, mafiaNames);
+	currentAssignments = buildAssignments(names, manualRoleMap);
 	currentFormals = null;
 	autoMatchNames();
 
@@ -727,20 +773,20 @@ function doRetroEntry() {
 	try {
 		retroNames = validateNames(raw);
 		gameMode = 'retroactive';
-		retroMafiaSelections = new Set();
+		retroRoleMap = new Map();
 
 		$('#assignments-display').classList.add('hidden');
 		$('#manual-setup').classList.add('hidden');
 		$('#retro-form').classList.remove('hidden');
 
-		renderManualPlayerList(retroNames, 'retro-player-list', retroMafiaSelections, () => {
+		renderManualPlayerList(retroNames, 'retro-player-list', retroRoleMap, () => {
 			updateRetroForm();
 			saveState();
 		});
 
 		$$('input[name="retro-winner"]').forEach((r) => (r.checked = false));
 		buildRetroN0Checks();
-		$('#retro-mafia-counter').textContent = '0/3 mafia selected';
+		$('#retro-mafia-counter').textContent = roleCounterText(retroRoleMap);
 		$('#retro-rated-preview').textContent = `${retroNames.length} players will be rated`;
 		$('#btn-retro-submit').disabled = true;
 		saveState();
@@ -765,24 +811,23 @@ function buildRetroN0Checks() {
 }
 
 function updateRetroForm() {
-	$('#retro-mafia-counter').textContent = `${retroMafiaSelections.size}/3 mafia selected`;
+	$('#retro-mafia-counter').textContent = roleCounterText(retroRoleMap);
 
 	const n0 = [...$$('#retro-n0-checks input:checked')].map((cb) => cb.value);
 	const rated = retroNames.length - n0.length;
 	$('#retro-rated-preview').textContent = `${rated} players will be rated`;
 
 	const winner = document.querySelector('input[name="retro-winner"]:checked');
-	$('#btn-retro-submit').disabled = !(retroMafiaSelections.size === 3 && winner);
+	$('#btn-retro-submit').disabled = !(isRoleSelectionComplete(retroRoleMap) && winner);
 }
 
 async function submitRetroGame() {
-	const mafiaNames = [...retroMafiaSelections];
 	const winner = document.querySelector('input[name="retro-winner"]:checked');
-	if (!winner || mafiaNames.length !== 3) return;
+	if (!winner || !isRoleSelectionComplete(retroRoleMap)) return;
 
 	const n0 = [...$$('#retro-n0-checks input:checked')].map((cb) => cb.value);
 
-	currentAssignments = buildAssignments(retroNames, mafiaNames);
+	currentAssignments = buildAssignments(retroNames, retroRoleMap);
 	autoMatchNames();
 
 	const confirmed = await confirmAction(
@@ -1054,8 +1099,8 @@ function newGame() {
 	vigiHasShot = false;
 	dayVotes = {};
 	gameMode = 'randomize';
-	manualMafiaSelections = new Set();
-	retroMafiaSelections = new Set();
+	manualRoleMap = new Map();
+	retroRoleMap = new Map();
 	retroNames = [];
 	$('#names-input').value = '';
 	$('#assignments-display').classList.add('hidden');
@@ -1783,10 +1828,10 @@ function saveState() {
 	if (winRadio) state.winner = winRadio.value;
 
 	if (gameMode === 'manual') {
-		state.manualMafiaSelections = [...manualMafiaSelections];
+		state.manualRoleMap = [...manualRoleMap];
 		try { state.manualNames = validateNames($('#names-input').value); } catch (_) {}
 	} else if (gameMode === 'retroactive') {
-		state.retroMafiaSelections = [...retroMafiaSelections];
+		state.retroRoleMap = [...retroRoleMap];
 		state.retroNames = retroNames;
 		const retroWinner = document.querySelector('input[name="retro-winner"]:checked');
 		if (retroWinner) state.retroWinner = retroWinner.value;
@@ -1851,32 +1896,32 @@ async function restoreState() {
 
 		// Restore manual/retro state on randomize panel even without assignments
 		if (state.activePanel === 'panel-randomize' && gameMode === 'manual' && state.manualNames) {
-			manualMafiaSelections = new Set(state.manualMafiaSelections || []);
+			manualRoleMap = new Map(state.manualRoleMap || []);
 			$('#names-input').value = state.manualNames.join('\n');
 			countNames();
 			$('#assignments-display').classList.add('hidden');
 			$('#retro-form').classList.add('hidden');
 			$('#manual-setup').classList.remove('hidden');
-			renderManualPlayerList(state.manualNames, 'manual-player-list', manualMafiaSelections, () => {
-				$('#mafia-counter').textContent = `${manualMafiaSelections.size}/3 mafia selected`;
-				$('#btn-manual-accept').disabled = manualMafiaSelections.size !== 3;
+			renderManualPlayerList(state.manualNames, 'manual-player-list', manualRoleMap, () => {
+				$('#mafia-counter').textContent = roleCounterText(manualRoleMap);
+				$('#btn-manual-accept').disabled = !isRoleSelectionComplete(manualRoleMap);
 				saveState();
 			});
-			$('#mafia-counter').textContent = `${manualMafiaSelections.size}/3 mafia selected`;
-			$('#btn-manual-accept').disabled = manualMafiaSelections.size !== 3;
+			$('#mafia-counter').textContent = roleCounterText(manualRoleMap);
+			$('#btn-manual-accept').disabled = !isRoleSelectionComplete(manualRoleMap);
 			showPanel('panel-randomize');
 			return true;
 		}
 
 		if (state.activePanel === 'panel-randomize' && gameMode === 'retroactive' && state.retroNames) {
 			retroNames = state.retroNames;
-			retroMafiaSelections = new Set(state.retroMafiaSelections || []);
+			retroRoleMap = new Map(state.retroRoleMap || []);
 			$('#names-input').value = retroNames.join('\n');
 			countNames();
 			$('#assignments-display').classList.add('hidden');
 			$('#manual-setup').classList.add('hidden');
 			$('#retro-form').classList.remove('hidden');
-			renderManualPlayerList(retroNames, 'retro-player-list', retroMafiaSelections, () => {
+			renderManualPlayerList(retroNames, 'retro-player-list', retroRoleMap, () => {
 				updateRetroForm();
 				saveState();
 			});
@@ -1994,7 +2039,7 @@ document.addEventListener('DOMContentLoaded', () => {
 	$('#btn-manual-cancel').addEventListener('click', () => {
 		$('#manual-setup').classList.add('hidden');
 		gameMode = 'randomize';
-		manualMafiaSelections = new Set();
+		manualRoleMap = new Map();
 		saveState();
 	});
 	$('#btn-manual-accept').addEventListener('click', acceptManualSetup);
@@ -2004,7 +2049,7 @@ document.addEventListener('DOMContentLoaded', () => {
 	$('#btn-retro-cancel').addEventListener('click', () => {
 		$('#retro-form').classList.add('hidden');
 		gameMode = 'randomize';
-		retroMafiaSelections = new Set();
+		retroRoleMap = new Map();
 		retroNames = [];
 		saveState();
 	});

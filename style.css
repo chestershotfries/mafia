@@ -857,6 +857,36 @@ textarea:focus {
 	background: rgba(196, 30, 58, 0.3);
 }
 
+.player-toggle.cop {
+	border-color: #d4a843;
+	background: rgba(212, 168, 67, 0.2);
+	color: #d4a843;
+}
+
+.player-toggle.cop:hover {
+	background: rgba(212, 168, 67, 0.3);
+}
+
+.player-toggle.medic {
+	border-color: #5fa863;
+	background: rgba(95, 168, 99, 0.2);
+	color: #5fa863;
+}
+
+.player-toggle.medic:hover {
+	background: rgba(95, 168, 99, 0.3);
+}
+
+.player-toggle.vigi {
+	border-color: #d97a50;
+	background: rgba(217, 122, 80, 0.2);
+	color: #d97a50;
+}
+
+.player-toggle.vigi:hover {
+	background: rgba(217, 122, 80, 0.3);
+}
+
 .hidden {
 	display: none;
 }
