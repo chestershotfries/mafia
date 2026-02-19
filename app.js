@@ -1517,7 +1517,7 @@ document.addEventListener('DOMContentLoaded', () => {
 	$('#btn-reroll').addEventListener('click', doRandomize);
 	$('#btn-accept').addEventListener('click', acceptAssignments);
 	$('#btn-dice').addEventListener('click', () => {
-		const max = parseInt($('#dice-max').value) || 100;
+		const max = parseInt($('#dice-max').value) || 20;
 		$('#dice-result').textContent = Math.floor(Math.random() * max) + 1;
 	});
 	$('#btn-back').addEventListener('click', () => showPanel('panel-game'));
