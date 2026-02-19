@@ -553,6 +553,17 @@ textarea:focus {
   font-size: 0.8rem;
 }
 
+.dice-input {
+  width: 3.5rem;
+  padding: 0.3rem 0.4rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-alt);
+  color: var(--text);
+  font-size: 0.8rem;
+  text-align: center;
+}
+
 .d100-result {
   font-size: 1.3rem;
   font-weight: 700;

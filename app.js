@@ -1516,8 +1516,9 @@ document.addEventListener('DOMContentLoaded', () => {
 	$('#btn-randomize').addEventListener('click', doRandomize);
 	$('#btn-reroll').addEventListener('click', doRandomize);
 	$('#btn-accept').addEventListener('click', acceptAssignments);
-	$('#btn-d100').addEventListener('click', () => {
-		$('#d100-result').textContent = Math.floor(Math.random() * 100) + 1;
+	$('#btn-dice').addEventListener('click', () => {
+		const max = parseInt($('#dice-max').value) || 100;
+		$('#dice-result').textContent = Math.floor(Math.random() * max) + 1;
 	});
 	$('#btn-back').addEventListener('click', () => showPanel('panel-game'));
 	$('#btn-submit').addEventListener('click', submitResults);
