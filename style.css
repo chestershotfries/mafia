@@ -333,6 +333,35 @@ textarea:focus {
 	gap: 0.35rem;
 }
 
+.winner-group label {
+	padding: 0.6rem 1.5rem;
+	border: 2px solid var(--border);
+	border-radius: var(--radius);
+	font-weight: 600;
+	font-size: 1rem;
+	transition: background 0.2s, border-color 0.2s, color 0.2s;
+}
+
+.winner-group input[type='radio'] {
+	display: none;
+}
+
+.winner-group label:has(input[value='Mafia']:checked) {
+	border-color: var(--mafia-red);
+	background: rgba(196, 30, 58, 0.2);
+	color: var(--mafia-red);
+}
+
+.winner-group label:has(input[value='Town']:checked) {
+	border-color: var(--town-blue);
+	background: rgba(91, 155, 213, 0.2);
+	color: var(--town-blue);
+}
+
+.winner-group label:hover {
+	background: rgba(255, 255, 255, 0.05);
+}
+
 /* Results table */
 .results-table {
 	width: 100%;
