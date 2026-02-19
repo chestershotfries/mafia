@@ -1482,7 +1482,7 @@ function addNightKills(deadSet, nightIndex) {
 	const nd = nightActions[nightIndex];
 	if (!nd) return;
 	for (const kill of nd.mafKills) {
-		if (kill) deadSet.add(kill);
+		if (kill && kill !== nd.medicSave) deadSet.add(kill);
 	}
 	if (nd.vigiTarget) deadSet.add(nd.vigiTarget);
 }
