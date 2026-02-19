@@ -19,6 +19,10 @@
       <textarea id="names-input" placeholder="Enter 13-15 names, one per line or comma-separated"
                 rows="8"></textarea>
       <p id="name-counter" class="counter">0/15 names</p>
+      <div class="d100-box">
+        <button id="btn-d100" class="btn btn-secondary btn-sm">Roll d100</button>
+        <span id="d100-result" class="d100-result"></span>
+      </div>
       <div class="button-row">
         <button id="btn-randomize" class="btn btn-primary">Randomize</button>
       </div>
@@ -28,10 +32,6 @@
         <ol id="assignments-list" class="assignments-list"></ol>
         <h3>RNG Formals</h3>
         <div id="formals-schedule" class="formals-grid"></div>
-        <div class="d100-box">
-          <button id="btn-d100" class="btn btn-secondary btn-sm">Roll d100</button>
-          <span id="d100-result" class="d100-result"></span>
-        </div>
         <div class="button-row">
           <button id="btn-reroll" class="btn btn-secondary">Re-randomize</button>
           <button id="btn-accept" class="btn btn-primary">Accept &amp; Play</button>
