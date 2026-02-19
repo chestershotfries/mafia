@@ -346,19 +346,48 @@ textarea:focus {
 	display: none;
 }
 
+.winner-group label:has(input[value='Mafia']) {
+	border-color: var(--mafia-red);
+	color: var(--mafia-red);
+}
+
+.winner-group label:has(input[value='Town']) {
+	border-color: var(--town-blue);
+	color: var(--town-blue);
+}
+
 .winner-group label:has(input[value='Mafia']:checked) {
+	background: rgba(196, 30, 58, 0.2);
+}
+
+.winner-group label:has(input[value='Town']:checked) {
+	background: rgba(91, 155, 213, 0.2);
+}
+
+.winner-group label:hover {
+	background: rgba(255, 255, 255, 0.05);
+}
+
+.n0-kill-group label {
+	padding: 0.4rem 0.8rem;
+	border: 2px solid var(--border);
+	border-radius: var(--radius);
+	font-weight: 600;
+	font-size: 0.95rem;
+	transition: background 0.2s, border-color 0.2s, color 0.2s;
+}
+
+.n0-kill-group input[type='checkbox'] {
+	display: none;
+}
+
+.n0-kill-group label:has(input:checked) {
 	border-color: var(--mafia-red);
 	background: rgba(196, 30, 58, 0.2);
 	color: var(--mafia-red);
 }
 
-.winner-group label:has(input[value='Town']:checked) {
-	border-color: var(--town-blue);
-	background: rgba(91, 155, 213, 0.2);
-	color: var(--town-blue);
-}
-
-.winner-group label:hover {
+.n0-kill-group label:hover {
 	background: rgba(255, 255, 255, 0.05);
 }
 
