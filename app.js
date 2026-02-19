@@ -7,6 +7,7 @@ const GHOST_NAME = 'Ghost';
 
 let currentAssignments = null;
 let currentFormals = null;
+let rollCount = 0;
 let knownPlayers = [];
 let playerRankMap = new Map();
 let nightActions = [];
@@ -202,6 +203,8 @@ function doRandomize() {
 		autoMatchNames();
 		renderEditableAssignments($('#assignments-list'));
 		renderFormals(currentFormals, $('#formals-schedule'));
+		rollCount++;
+		$('#roll-count').textContent = rollCount;
 		$('#assignments-display').classList.remove('hidden');
 	} catch (e) {
 		showToast(e.message);
@@ -554,6 +557,7 @@ function autoMatchNames() {
 // --- Accept & go to record panel ---
 
 function acceptAssignments() {
+	rollCount = 0;
 	nightActions = [];
 	vigiHasShot = false;
 	dayVotes = {};
@@ -1512,6 +1516,9 @@ document.addEventListener('DOMContentLoaded', () => {
 	$('#btn-randomize').addEventListener('click', doRandomize);
 	$('#btn-reroll').addEventListener('click', doRandomize);
 	$('#btn-accept').addEventListener('click', acceptAssignments);
+	$('#btn-d100').addEventListener('click', () => {
+		$('#d100-result').textContent = Math.floor(Math.random() * 100) + 1;
+	});
 	$('#btn-back').addEventListener('click', () => showPanel('panel-game'));
 	$('#btn-submit').addEventListener('click', submitResults);
 	$('#btn-new-game').addEventListener('click', newGame);

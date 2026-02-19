@@ -24,10 +24,14 @@
       </div>
 
       <div id="assignments-display" class="hidden">
-        <h3>Assignments</h3>
+        <h3>Assignments <span id="roll-count" class="roll-count"></span></h3>
         <ol id="assignments-list" class="assignments-list"></ol>
         <h3>RNG Formals</h3>
         <div id="formals-schedule" class="formals-grid"></div>
+        <div class="d100-box">
+          <button id="btn-d100" class="btn btn-secondary btn-sm">Roll d100</button>
+          <span id="d100-result" class="d100-result"></span>
+        </div>
         <div class="button-row">
           <button id="btn-reroll" class="btn btn-secondary">Re-randomize</button>
           <button id="btn-accept" class="btn btn-primary">Accept &amp; Play</button>
