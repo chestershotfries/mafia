@@ -825,8 +825,8 @@ textarea:focus {
 /* Manual player assignment grid */
 .manual-player-grid {
 	display: flex;
-	flex-wrap: wrap;
-	gap: 0.5rem;
+	flex-direction: column;
+	gap: 0.35rem;
 	margin: 0.75rem 0;
 }
 
