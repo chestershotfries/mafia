@@ -183,6 +183,21 @@ textarea:focus {
 	color: var(--town-blue);
 }
 
+.assignments-list .cop {
+	color: #d4a843;
+	font-weight: 700;
+}
+
+.assignments-list .medic {
+	color: #5fa863;
+	font-weight: 700;
+}
+
+.assignments-list .vigi {
+	color: #d97a50;
+	font-weight: 700;
+}
+
 /* Editable name buttons */
 .name-btn {
 	background: none;
@@ -207,6 +222,21 @@ textarea:focus {
 
 .name-btn.town {
 	color: var(--town-blue);
+}
+
+.name-btn.cop {
+	color: #d4a843;
+	border-color: #d4a843;
+}
+
+.name-btn.medic {
+	color: #5fa863;
+	border-color: #5fa863;
+}
+
+.name-btn.vigi {
+	color: #d97a50;
+	border-color: #d97a50;
 }
 
 .name-match-badge {

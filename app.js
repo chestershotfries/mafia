@@ -256,6 +256,15 @@ function renderAssignments(assignments, listEl) {
 		} else if (a.is_ghost) {
 			nameSpan.className = 'ghost';
 			nameSpan.textContent = `${a.name} (Ghost)`;
+		} else if (a.position === 4) {
+			nameSpan.className = 'cop';
+			nameSpan.textContent = `${a.name} (Cop)`;
+		} else if (a.position === 5) {
+			nameSpan.className = 'medic';
+			nameSpan.textContent = `${a.name} (Medic)`;
+		} else if (a.position === 6) {
+			nameSpan.className = 'vigi';
+			nameSpan.textContent = `${a.name} (Vigi)`;
 		} else {
 			nameSpan.className = 'town';
 			nameSpan.textContent = a.name;
@@ -442,7 +451,10 @@ function renderEditableAssignments(listEl = $('#locked-list')) {
 			li.appendChild(nameSpan);
 		} else {
 			const nameBtn = document.createElement('button');
-			nameBtn.className = a.role === 'Mafia' ? 'name-btn mafia' : 'name-btn town';
+			const posClass = { 4: 'cop', 5: 'medic', 6: 'vigi' };
+			nameBtn.className = a.role === 'Mafia'
+				? 'name-btn mafia'
+				: `name-btn ${posClass[a.position] || 'town'}`;
 			nameBtn.textContent = a.name;
 			nameBtn.title = 'Click to edit name';
 			nameBtn.addEventListener('click', () => startNameEdit(a, nameBtn, listEl));
