@@ -403,12 +403,46 @@ def undo_last_game():
     # Delete game rows from MatchHistory
     ws_history.delete_rows(2, 2 + game_row_count - 1)
 
+    # Clean up players with no remaining games
+    remaining_history = ws_history.get_all_values()
+    remaining_players = set()
+    for row in remaining_history[1:]:
+        if row[1]:
+            remaining_players.add(row[1])
+
+    players_to_delete = [p['name'] for p in players_to_restore
+                         if p['name'] not in remaining_players]
+
+    if players_to_delete:
+        delete_names = set(players_to_delete)
+        # Delete from MatchRatings (reverse order to preserve indices)
+        rows_to_delete = sorted(
+            [r for name, r in ratings_lookup.items() if name in delete_names],
+            reverse=True
+        )
+        for row_num in rows_to_delete:
+            ws_ratings.delete_rows(row_num)
+
+        # Delete from Stats Summary
+        try:
+            ws_stats = ss.worksheet('Stats Summary')
+            stats_data = ws_stats.get_all_values()
+            stats_rows_to_delete = sorted(
+                [i + 1 for i, row in enumerate(stats_data) if row[0] in delete_names],
+                reverse=True
+            )
+            for row_num in stats_rows_to_delete:
+                ws_stats.delete_rows(row_num)
+        except gspread.exceptions.WorksheetNotFound:
+            pass
+
     # Sort Stats Summary
     sort_stats_summary(ss)
 
     return {
         'undone_game_id': int(float(game_id)),
         'players_restored': restored,
+        'players_deleted': players_to_delete,
     }
 
 
