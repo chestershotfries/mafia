@@ -1396,7 +1396,7 @@ function generateNightOutput(nightData) {
 		output += `vigi: ||holstered||\n`;
 	}
 
-	if (nightData.rngs) {
+	if (nightData.rngs !== '') {
 		output += `rngs: ${nightData.rngs}`;
 	}
 
