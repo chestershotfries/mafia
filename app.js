@@ -1949,7 +1949,8 @@ function continueToRecord() {
 
 	// Auto-check N0 mafia kill targets
 	if (nightActions.length > 0) {
-		const n0Kills = [...new Set(nightActions[0].mafKills.filter(Boolean))];
+		const n0Medic = nightActions[0].medicSave;
+		const n0Kills = [...new Set(nightActions[0].mafKills.filter(k => k && k !== n0Medic))];
 		$$('#night0-checks input[type="checkbox"]').forEach((cb) => {
 			cb.checked = n0Kills.includes(cb.value);
 		});
