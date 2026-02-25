@@ -979,12 +979,13 @@ async function submitRetroGame() {
 	currentAssignments = buildAssignments(retroNames, retroRoleMap);
 	autoMatchNames();
 
-	const confirmed = await confirmAction(
+	const password = await confirmAction(
 		`Record past game: <strong>${winner.value} Win</strong>` +
 		(n0.length ? `<br>Night 0 kills: ${n0.join(', ')}` : '') +
-		'<br><br>This will update the Google Sheet. Continue?'
+		'<br><br>This will update the Google Sheet. Continue?',
+		true
 	);
-	if (!confirmed) return;
+	if (!password) return;
 
 	$('#btn-retro-submit').disabled = true;
 	try {
@@ -992,6 +993,7 @@ async function submitRetroGame() {
 			assignments: currentAssignments,
 			winner: winner.value,
 			night0_kills: n0,
+			password,
 		});
 
 		clearSavedState();
@@ -1021,7 +1023,7 @@ function updateRatedPreview() {
 
 // --- Confirmation dialog ---
 
-function confirmAction(message) {
+function confirmAction(message, requirePassword = false) {
 	return new Promise((resolve) => {
 		const overlay = document.createElement('div');
 		overlay.className = 'overlay';
@@ -1029,6 +1031,7 @@ function confirmAction(message) {
 		dialog.className = 'confirm-dialog';
 		dialog.innerHTML = `
       <p>${message}</p>
+      ${requirePassword ? '<input type="password" id="confirm-password" placeholder="Enter password">' : ''}
       <div class="button-row">
         <button class="btn btn-secondary" id="confirm-cancel">Cancel</button>
         <button class="btn btn-primary" id="confirm-ok">Confirm</button>
@@ -1037,9 +1040,12 @@ function confirmAction(message) {
 		overlay.appendChild(dialog);
 		document.body.appendChild(overlay);
 
+		const pwInput = dialog.querySelector('#confirm-password');
+		if (pwInput) pwInput.focus();
+
 		dialog.querySelector('#confirm-ok').addEventListener('click', () => {
 			document.body.removeChild(overlay);
-			resolve(true);
+			resolve(requirePassword ? (pwInput.value || false) : true);
 		});
 		dialog.querySelector('#confirm-cancel').addEventListener('click', () => {
 			document.body.removeChild(overlay);
@@ -1059,12 +1065,13 @@ async function submitResults() {
 
 	const n0 = [...$$('#night0-checks input:checked')].map((cb) => cb.value);
 
-	const confirmed = await confirmAction(
+	const password = await confirmAction(
 		`Record game: <strong>${winner.value} Win</strong>` +
 		(n0.length ? `<br>Night 0 kills: ${n0.join(', ')}` : '') +
-		'<br><br>This will update the Google Sheet. Continue?'
+		'<br><br>This will update the Google Sheet. Continue?',
+		true
 	);
-	if (!confirmed) return;
+	if (!password) return;
 
 	$('#btn-submit').disabled = true;
 	try {
@@ -1072,6 +1079,7 @@ async function submitResults() {
 			assignments: currentAssignments,
 			winner: winner.value,
 			night0_kills: n0,
+			password,
 		});
 
 		clearSavedState();
@@ -1219,15 +1227,16 @@ async function loadLastGame() {
 // --- Undo last game ---
 
 async function undoLastGame() {
-	const confirmed = await confirmAction(
-		'Undo the last recorded game?<br><br>This will restore all player ratings to their previous values and delete the game from history.'
+	const password = await confirmAction(
+		'Undo the last recorded game?<br><br>This will restore all player ratings to their previous values and delete the game from history.',
+		true
 	);
-	if (!confirmed) return;
+	if (!password) return;
 
 	const btn = $('#btn-undo-last');
 	btn.disabled = true;
 	try {
-		const result = await api('undoLastGame');
+		const result = await api('undoLastGame', { password });
 		showToast(`Game ${result.undone_game_id} undone (${result.players_restored.length} players restored)`, true);
 		await loadPlayerNames();
 		await loadLastGame();
