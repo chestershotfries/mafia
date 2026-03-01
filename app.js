@@ -1652,18 +1652,18 @@ function refreshConstraints() {
 		}
 
 		// Role holder death — disable entire select if holder is dead
-		if (cop && !cop.is_ghost && dead.has(cop.name) && copSel) {
+		if (cop && (cop.is_ghost || dead.has(cop.name)) && copSel) {
 			copSel.disabled = true;
 			copSel.value = '';
 			nd.copCheck = '';
 		}
-		if (medic && !medic.is_ghost && dead.has(medic.name) && medicSel) {
+		if (medic && (medic.is_ghost || dead.has(medic.name)) && medicSel) {
 			medicSel.disabled = true;
 			medicSel.value = '';
 			nd.medicSave = '';
 		}
 		const vigiSel = $(`.vigi-select[data-night="${n}"]`);
-		if (vigi && !vigi.is_ghost && dead.has(vigi.name) && vigiSel) {
+		if (vigi && (vigi.is_ghost || dead.has(vigi.name)) && vigiSel) {
 			vigiSel.disabled = true;
 			vigiSel.value = '';
 			nd.vigiTarget = '';
