@@ -113,6 +113,8 @@ function renderLeaderboard(players) {
 			<td class="${rankClass(rank)}">${medals[rank] || rank}</td>
 			<td class="${nameClass}">${p.name}</td>
 			<td>${p.rating}</td>
+			<td>${p.mu.toFixed(1)}</td>
+			<td>${p.sigma.toFixed(1)}</td>
 			<td>${p.total_games}</td>
 			<td ${winPctStyle(p.total_win_pct)}>${p.total_win_pct}%</td>
 			<td>${p.mafia_games}</td>
