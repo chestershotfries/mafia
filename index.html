@@ -23,6 +23,7 @@
         <button id="btn-randomize" class="btn btn-primary">Randomize</button>
         <button id="btn-manual" class="btn btn-secondary">Manual Setup</button>
         <button id="btn-retro" class="btn btn-secondary">Log Past Game</button>
+        <button id="btn-darkstars" class="btn btn-secondary btn-ds">Dark Stars</button>
         <input id="dice-max" type="number" class="dice-input" value="20" min="2">
         <button id="btn-dice" class="btn btn-secondary btn-sm">Roll</button>
         <span id="dice-result" class="d100-result"></span>
@@ -74,6 +75,18 @@
         <div class="button-row">
           <button id="btn-retro-cancel" class="btn btn-secondary">Cancel</button>
           <button id="btn-retro-submit" class="btn btn-primary" disabled>Submit Game</button>
+        </div>
+      </div>
+
+      <div id="darkstars-setup" class="hidden">
+        <h3>Dark Stars Setup</h3>
+        <p class="hint">15-16 players. Setup is randomly assigned. Not recorded for stats.</p>
+        <div id="darkstars-setup-info" class="darkstars-info"></div>
+        <div id="darkstars-player-list" class="manual-player-grid"></div>
+        <div class="button-row">
+          <button id="btn-darkstars-cancel" class="btn btn-secondary">Cancel</button>
+          <button id="btn-darkstars-reroll" class="btn btn-secondary">Reroll Setup</button>
+          <button id="btn-darkstars-accept" class="btn btn-primary">Accept &amp; Play</button>
         </div>
       </div>
     </section>

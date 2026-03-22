@@ -27,7 +27,11 @@ let playerRankMap = new Map();
 let nightActions = [];
 let vigiHasShot = false;
 let dayVotes = {};
-let gameMode = 'randomize'; // 'randomize' | 'manual' | 'retroactive'
+let gameMode = 'randomize'; // 'randomize' | 'manual' | 'retroactive' | 'darkstars'
+let gameVariant = 'allstars'; // 'allstars' | 'darkstars'
+let darkStarsSetup = null; // 1 | 2 | 3
+let oneShotTracker = {}; // { roleKey: boolean }
+let darkStarsNames = [];
 let manualRoleMap = new Map(); // name → 'Mafia'|'Cop'|'Medic'|'Vigi'
 let retroRoleMap = new Map();
 let manualNames = [];
@@ -38,6 +42,41 @@ let retroSkipMatch = new Set();
 const ROLE_CYCLE = ['Town', 'Mafia', 'Cop', 'Medic', 'Vigi'];
 const ROLE_LIMITS = { Mafia: 3, Cop: 1, Medic: 1, Vigi: 1 };
 const ROLE_CSS = { Town: '', Mafia: 'mafia', Cop: 'cop', Medic: 'medic', Vigi: 'vigi' };
+
+// Dark Stars setup definitions
+const DARK_STARS_SETUPS = {
+	1: {
+		name: 'Corrupted Cop',
+		mafiaFaction: 'Rolecop',
+		townRoles: [
+			{ key: 'morticianA', label: 'Mortician A', oneShot: true },
+			{ key: 'morticianB', label: 'Mortician B', oneShot: true },
+			{ key: 'nerfedMedicA', label: 'Nerfed Medic A' },
+			{ key: 'nerfedMedicB', label: 'Nerfed Medic B' },
+			{ key: 'vigi', label: 'Vigilante', oneShot: true },
+		],
+	},
+	2: {
+		name: 'Corrupted Medic',
+		mafiaFaction: 'Roleblock',
+		mafiaFactionOneShot: true,
+		townRoles: [
+			{ key: 'morticianA', label: 'Mortician A', oneShot: true },
+			{ key: 'parityCop', label: 'Parity Cop' },
+			{ key: 'vigi', label: 'Vigilante', oneShot: true },
+		],
+	},
+	3: {
+		name: 'Corrupted Vigilante',
+		mafiaFaction: 'Split Vigi',
+		mafiaFactionOneShot: true,
+		townRoles: [
+			{ key: 'morticianA', label: 'Mortician A', oneShot: true },
+			{ key: 'parityCop', label: 'Parity Cop' },
+			{ key: 'nerfedMedicA', label: 'Nerfed Medic' },
+		],
+	},
+};
 
 const $ = (sel) => document.querySelector(sel);
 const $$ = (sel) => document.querySelectorAll(sel);
@@ -116,6 +155,30 @@ function validateNames(rawInput) {
 	}
 	if (names.length < 13 || names.length > 15) {
 		throw new Error(`Need 13-15 players, got ${names.length}`);
+	}
+	return names;
+}
+
+function validateDarkStarsNames(rawInput) {
+	let names;
+	if (rawInput.includes(',')) {
+		names = rawInput.split(',').map((n) => n.trim()).filter(Boolean);
+	} else {
+		names = rawInput.split('\n').map((n) => n.trim()).filter(Boolean);
+	}
+
+	const seen = new Set();
+	const dupes = [];
+	for (const n of names) {
+		const lower = n.toLowerCase();
+		if (seen.has(lower)) dupes.push(n);
+		seen.add(lower);
+	}
+	if (dupes.length) {
+		throw new Error(`Duplicate names: ${dupes.join(', ')}`);
+	}
+	if (names.length < 15 || names.length > 16) {
+		throw new Error(`Dark Stars needs 15-16 players, got ${names.length}`);
 	}
 	return names;
 }
@@ -311,6 +374,9 @@ async function doRandomize() {
 		renderFormals(currentFormals, $('#formals-schedule'));
 		rollCount++;
 		$('#roll-count').textContent = rollCount;
+		$('#darkstars-setup').classList.add('hidden');
+		$('#manual-setup').classList.add('hidden');
+		$('#retro-form').classList.add('hidden');
 		$('#assignments-display').classList.remove('hidden');
 		saveState();
 	} catch (e) {
@@ -880,6 +946,150 @@ function renderManualPlayerList(names, containerId, roleMap, onChange, skipMatch
 	}
 }
 
+// --- Dark Stars Setup ---
+
+function buildDarkStarsAssignments(names, setupNum) {
+	const setup = DARK_STARS_SETUPS[setupNum];
+	const shuffled = [...names];
+	shuffleArray(shuffled);
+
+	const assignments = [];
+	// Positions 1-3: Mafia
+	for (let i = 0; i < 3; i++) {
+		assignments.push({ position: i + 1, name: shuffled[i], role: 'Mafia', is_ghost: false, dsRole: 'Mafia' });
+	}
+	// Town power roles
+	for (let i = 0; i < setup.townRoles.length; i++) {
+		const tr = setup.townRoles[i];
+		assignments.push({
+			position: i + 4,
+			name: shuffled[i + 3],
+			role: 'Town',
+			is_ghost: false,
+			dsRole: tr.label,
+		});
+	}
+	// Remaining: plain Town
+	for (let i = 3 + setup.townRoles.length; i < shuffled.length; i++) {
+		assignments.push({
+			position: i + 1,
+			name: shuffled[i],
+			role: 'Town',
+			is_ghost: false,
+			dsRole: 'Town',
+		});
+	}
+	return assignments;
+}
+
+function generateDarkStarsRoleReveal() {
+	const setup = DARK_STARS_SETUPS[darkStarsSetup];
+	const mafia = currentAssignments.filter((a) => a.role === 'Mafia').map((a) => a.name);
+	const lines = [
+		`Setup: ${setup.name}`,
+		`Mafia: ||${mafia.join(', ')}||`,
+		`Mafia Power: ||${setup.mafiaFaction}||`,
+	];
+	for (const a of currentAssignments) {
+		if (a.role === 'Town' && a.dsRole !== 'Town') {
+			lines.push(`${a.dsRole}: ||${a.name}||`);
+		}
+	}
+	return lines.join('\n');
+}
+
+function renderDarkStarsSetupInfo() {
+	const setup = DARK_STARS_SETUPS[darkStarsSetup];
+	const info = $('#darkstars-setup-info');
+	info.innerHTML = `<strong>Setup ${darkStarsSetup}: ${setup.name}</strong><br>` +
+		`Mafia Faction Power: <strong>${setup.mafiaFaction}</strong>` +
+		(setup.mafiaFactionOneShot ? ' (one-shot)' : '') + '<br>' +
+		`Town Roles: ${setup.townRoles.map((r) => r.label + (r.oneShot ? ' (1x)' : '')).join(', ')}`;
+}
+
+function doDarkStarsSetup() {
+	const raw = $('#names-input').value;
+	try {
+		darkStarsNames = validateDarkStarsNames(raw);
+		for (let i = 0; i < darkStarsNames.length; i++) darkStarsNames[i] = correctCase(darkStarsNames[i]);
+		gameVariant = 'darkstars';
+		gameMode = 'darkstars';
+
+		// Random setup pick (1-3)
+		darkStarsSetup = Math.floor(nextRandom() * 3) + 1;
+		currentAssignments = buildDarkStarsAssignments(darkStarsNames, darkStarsSetup);
+
+		$('#assignments-display').classList.add('hidden');
+		$('#manual-setup').classList.add('hidden');
+		$('#retro-form').classList.add('hidden');
+		$('#darkstars-setup').classList.remove('hidden');
+
+		renderDarkStarsSetupInfo();
+		renderDarkStarsPlayerList();
+		saveState();
+	} catch (e) {
+		showToast(e.message);
+	}
+}
+
+function renderDarkStarsPlayerList() {
+	const container = $('#darkstars-player-list');
+	container.innerHTML = '';
+	for (const a of currentAssignments) {
+		const item = document.createElement('div');
+		item.className = 'manual-player-item';
+
+		const nameSpan = document.createElement('span');
+		nameSpan.className = 'player-name-btn';
+		nameSpan.textContent = a.name;
+		item.appendChild(nameSpan);
+
+		const roleSpan = document.createElement('span');
+		const roleClass = a.role === 'Mafia' ? 'mafia' : (a.dsRole !== 'Town' ? 'ds-power' : '');
+		roleSpan.className = 'player-toggle' + (roleClass ? ` ${roleClass}` : '');
+		roleSpan.textContent = a.role === 'Mafia' ? 'Mafia' : a.dsRole;
+		item.appendChild(roleSpan);
+
+		container.appendChild(item);
+	}
+}
+
+function rerollDarkStarsSetup() {
+	darkStarsSetup = Math.floor(nextRandom() * 3) + 1;
+	currentAssignments = buildDarkStarsAssignments(darkStarsNames, darkStarsSetup);
+	renderDarkStarsSetupInfo();
+	renderDarkStarsPlayerList();
+	saveState();
+}
+
+function acceptDarkStarsSetup() {
+	// Initialize one-shot tracker
+	const setup = DARK_STARS_SETUPS[darkStarsSetup];
+	oneShotTracker = {};
+	for (const r of setup.townRoles) {
+		if (r.oneShot) oneShotTracker[r.key] = false;
+	}
+	if (setup.mafiaFactionOneShot) oneShotTracker['mafiaFaction'] = false;
+
+	rollCount = 0;
+	nightActions = [];
+	vigiHasShot = false;
+	dayVotes = {};
+
+	$('#role-reveal-pre').textContent = generateDarkStarsRoleReveal();
+	$('#nights-container').innerHTML = '';
+	// Setups 2 & 3 have a Parity Cop N0 check; setup 1 has no N0
+	if (darkStarsSetup !== 1) {
+		addDarkStarsNightSection(0);
+	}
+	updateNightButtons();
+
+	$('#darkstars-setup').classList.add('hidden');
+	$('#btn-continue-record').textContent = 'End Game';
+	showPanel('panel-game');
+	saveState();
+}
+
 function doManualSetup() {
 	const raw = $('#names-input').value;
 	try {
@@ -892,6 +1102,7 @@ function doManualSetup() {
 
 		$('#assignments-display').classList.add('hidden');
 		$('#retro-form').classList.add('hidden');
+		$('#darkstars-setup').classList.add('hidden');
 		$('#manual-setup').classList.remove('hidden');
 
 		renderManualPlayerList(manualNames, 'manual-player-list', manualRoleMap, () => {
@@ -940,6 +1151,7 @@ function doRetroEntry() {
 
 		$('#assignments-display').classList.add('hidden');
 		$('#manual-setup').classList.add('hidden');
+		$('#darkstars-setup').classList.add('hidden');
 		$('#retro-form').classList.remove('hidden');
 
 		renderManualPlayerList(retroNames, 'retro-player-list', retroRoleMap, () => {
@@ -1272,6 +1484,10 @@ function newGame() {
 	vigiHasShot = false;
 	dayVotes = {};
 	gameMode = 'randomize';
+	gameVariant = 'allstars';
+	darkStarsSetup = null;
+	oneShotTracker = {};
+	darkStarsNames = [];
 	manualRoleMap = new Map();
 	retroRoleMap = new Map();
 	manualNames = [];
@@ -1282,6 +1498,8 @@ function newGame() {
 	$('#assignments-display').classList.add('hidden');
 	$('#manual-setup').classList.add('hidden');
 	$('#retro-form').classList.add('hidden');
+	$('#darkstars-setup').classList.add('hidden');
+	$('#btn-continue-record').textContent = 'Continue to Record';
 	$('#nights-container').innerHTML = '';
 	countNames();
 	showPanel('panel-randomize');
@@ -1433,7 +1651,9 @@ function updateNightOutput(nightNum) {
 
 	const pre = $(`#night-output-${nightNum}`);
 	if (pre) {
-		pre.textContent = generateNightOutput(nightData);
+		pre.textContent = gameMode === 'darkstars'
+			? generateDarkStarsNightOutput(nightData)
+			: generateNightOutput(nightData);
 	}
 }
 
@@ -1455,22 +1675,39 @@ function handleCopyClick(e) {
 	});
 }
 
+function getNextNightNum() {
+	if (nightActions.length === 0) {
+		// Dark Stars setup 1 skips N0
+		if (gameMode === 'darkstars' && darkStarsSetup === 1) return 1;
+		return 0;
+	}
+	return nightActions[nightActions.length - 1].night + 1;
+}
+
 function updateNightButtons() {
 	const container = $('#night-buttons');
 	container.innerHTML = '';
 	const gameOver = !!checkWinCondition();
-	for (let i = 0; i <= 7; i++) {
+	const startNight = (gameMode === 'darkstars' && darkStarsSetup === 1) ? 1 : 0;
+	const nextNight = getNextNightNum();
+
+	for (let i = startNight; i <= 7; i++) {
 		const btn = document.createElement('button');
 		btn.className = 'btn-night';
 		btn.textContent = `N${i}`;
 		btn.dataset.night = i;
 
-		if (i < nightActions.length) {
+		const isUsed = nightActions.some((nd) => nd.night === i);
+		if (isUsed) {
 			btn.disabled = true;
 			btn.classList.add('used');
-		} else if (i === nightActions.length && !gameOver) {
+		} else if (i === nextNight && !gameOver) {
 			btn.addEventListener('click', () => {
-				addNightSection(i);
+				if (gameMode === 'darkstars') {
+					addDarkStarsNightSection(i);
+				} else {
+					addNightSection(i);
+				}
 				updateNightButtons();
 			});
 		} else {
@@ -1522,9 +1759,23 @@ function addNightKills(deadSet, nightIndex) {
 		if (kill) killCounts[kill] = (killCounts[kill] || 0) + 1;
 	}
 	if (nd.vigiTarget) killCounts[nd.vigiTarget] = (killCounts[nd.vigiTarget] || 0) + 1;
-	if (nd.medicSave && killCounts[nd.medicSave]) {
-		killCounts[nd.medicSave]--;
+
+	if (nd.darkStars) {
+		// Dark Stars: Split Vigi adds a kill
+		if (nd.darkStars.splitVigiTarget) {
+			killCounts[nd.darkStars.splitVigiTarget] = (killCounts[nd.darkStars.splitVigiTarget] || 0) + 1;
+		}
+		// Nerfed Medic saves (1 or 2)
+		for (const save of [nd.darkStars.nerfedMedicA, nd.darkStars.nerfedMedicB].filter(Boolean)) {
+			if (killCounts[save]) killCounts[save]--;
+		}
+	} else {
+		// All Stars medic save
+		if (nd.medicSave && killCounts[nd.medicSave]) {
+			killCounts[nd.medicSave]--;
+		}
 	}
+
 	for (const [name, count] of Object.entries(killCounts)) {
 		if (count > 0) deadSet.add(name);
 	}
@@ -1532,7 +1783,9 @@ function addNightKills(deadSet, nightIndex) {
 
 function getDeadBeforeNight(n) {
 	const dead = new Set();
-	for (let i = 0; i < n; i++) addNightKills(dead, i);
+	for (let i = 0; i < nightActions.length; i++) {
+		if (nightActions[i].night < n) addNightKills(dead, i);
+	}
 	for (let d = 1; d <= n; d++) {
 		if (dayVotes[d]) dead.add(dayVotes[d]);
 	}
@@ -1541,14 +1794,243 @@ function getDeadBeforeNight(n) {
 
 function getDeadBeforeDay(d) {
 	const dead = new Set();
-	for (let i = 0; i < d; i++) addNightKills(dead, i);
+	for (let i = 0; i < nightActions.length; i++) {
+		if (nightActions[i].night < d) addNightKills(dead, i);
+	}
 	for (let dd = 1; dd < d; dd++) {
 		if (dayVotes[dd]) dead.add(dayVotes[dd]);
 	}
 	return dead;
 }
 
+function refreshDarkStarsConstraints() {
+	const setup = DARK_STARS_SETUPS[darkStarsSetup];
+
+	// Recalculate one-shot tracker from nightActions
+	oneShotTracker = {};
+	for (const r of setup.townRoles) {
+		if (r.oneShot) oneShotTracker[r.key] = false;
+	}
+	if (setup.mafiaFactionOneShot) oneShotTracker['mafiaFaction'] = false;
+
+	for (const nd of nightActions) {
+		if (!nd.darkStars) continue;
+		if (nd.vigiShot) oneShotTracker['vigi'] = true;
+		if (nd.darkStars.roleblockTarget) oneShotTracker['mafiaFaction'] = true;
+		if (nd.darkStars.splitVigiTarget) oneShotTracker['mafiaFaction'] = true;
+		if (nd.darkStars.morticianA?.target) oneShotTracker['morticianA'] = true;
+		if (nd.darkStars.morticianB?.target) oneShotTracker['morticianB'] = true;
+	}
+
+	for (let idx = 0; idx < nightActions.length; idx++) {
+		const nd = nightActions[idx];
+		const n = nd.night; // use night number for DOM queries
+		const dead = getDeadBeforeNight(n);
+		const ds = nd.darkStars;
+		if (!ds) continue;
+
+		// Collect all selects for this night for generic dead-disabling
+		const allSels = [
+			...$$(`[data-night="${n}"].maf-select`),
+			$(`.ds-rolecop-select[data-night="${n}"]`),
+			$(`.ds-roleblock-select[data-night="${n}"]`),
+			$(`.ds-splitvigi-select[data-night="${n}"]`),
+			$(`.ds-paritycop-select[data-night="${n}"]`),
+			...$$(`.ds-nerfedmedic-select[data-night="${n}"]`),
+			$(`.ds-vigi-select[data-night="${n}"]`),
+		].filter(Boolean);
+
+		// Enable all options first
+		for (const sel of allSels) {
+			sel.disabled = false;
+			sel.querySelectorAll('option').forEach((opt) => { opt.disabled = false; });
+		}
+
+		// Disable dead players in all selects (except mortician which targets dead)
+		for (const sel of allSels) {
+			if (sel.classList.contains('ds-mortician-select')) continue;
+			sel.querySelectorAll('option').forEach((opt) => {
+				if (opt.value !== '' && dead.has(opt.value)) opt.disabled = true;
+			});
+		}
+
+		// Mortician: only show dead players
+		$$(`[data-night="${n}"].ds-mortician-select`).forEach((mSel) => {
+			const mortKey = mSel.dataset.mortKey;
+			// Rebuild options with current dead players
+			const currentVal = mSel.value;
+			mSel.innerHTML = '';
+			const defaultOpt = document.createElement('option');
+			defaultOpt.value = '';
+			defaultOpt.textContent = 'No check';
+			mSel.appendChild(defaultOpt);
+			for (const name of dead) {
+				const opt = document.createElement('option');
+				opt.value = name;
+				opt.textContent = name;
+				mSel.appendChild(opt);
+			}
+			mSel.value = dead.has(currentVal) ? currentVal : '';
+			if (mSel.value !== currentVal) ds[mortKey].target = mSel.value;
+
+			// One-shot: disable if used on a different night
+			const usedOnOtherNight = oneShotTracker[mortKey] &&
+				!nd.darkStars[mortKey]?.target;
+			if (usedOnOtherNight) {
+				mSel.disabled = true;
+				mSel.value = '';
+				ds[mortKey].target = '';
+			}
+			const spentEl = $(`#ds-${mortKey}-spent-${n}`);
+			if (spentEl) spentEl.classList.toggle('hidden', !usedOnOtherNight);
+
+			// Disable result if no target
+			const resultSel = $(`.ds-mortician-result[data-night="${n}"][data-mort-key="${mortKey}"]`);
+			if (resultSel) resultSel.disabled = !mSel.value;
+
+			// Disable if holder is dead
+			const holderLabel = setup.townRoles.find((r) => r.key === mortKey)?.label;
+			const holder = currentAssignments.find((a) => a.dsRole === holderLabel);
+			if (holder && dead.has(holder.name)) {
+				mSel.disabled = true;
+				mSel.value = '';
+				ds[mortKey].target = '';
+			}
+		});
+
+		// Nerfed Medic constraints
+		$$(`[data-night="${n}"].ds-nerfedmedic-select`).forEach((nmSel) => {
+			const medicKey = nmSel.dataset.medicKey;
+			const holderLabel = setup.townRoles.find((r) => r.key === medicKey)?.label;
+			const holder = currentAssignments.find((a) => a.dsRole === holderLabel);
+
+			// No consecutive save on same target
+			if (idx > 0 && nightActions[idx - 1].darkStars) {
+				const prevSave = nightActions[idx - 1].darkStars[medicKey];
+				if (prevSave) {
+					nmSel.querySelectorAll('option').forEach((opt) => {
+						if (opt.value === prevSave) opt.disabled = true;
+					});
+				}
+			}
+
+			// Disable if holder is dead
+			if (holder && dead.has(holder.name)) {
+				nmSel.disabled = true;
+				nmSel.value = '';
+				ds[medicKey] = '';
+			}
+		});
+
+		// Parity Cop: disable if holder is dead
+		const pcSel = $(`.ds-paritycop-select[data-night="${n}"]`);
+		if (pcSel) {
+			const holder = currentAssignments.find((a) => a.dsRole === 'Parity Cop');
+			if (holder && dead.has(holder.name)) {
+				pcSel.disabled = true;
+				pcSel.value = '';
+				ds.parityCopTarget = '';
+			}
+			const pcResult = $(`.ds-paritycop-result[data-night="${n}"]`);
+			if (pcResult) pcResult.disabled = !pcSel.value;
+		}
+
+		// Rolecop: disable if all mafia dead (shouldn't happen but safety)
+		const rcSel = $(`.ds-rolecop-select[data-night="${n}"]`);
+		if (rcSel) {
+			const rcInput = $(`.ds-rolecop-result[data-night="${n}"]`);
+			if (rcInput) rcInput.disabled = !rcSel.value;
+		}
+
+		// Roleblock (one-shot)
+		const rbSel = $(`.ds-roleblock-select[data-night="${n}"]`);
+		if (rbSel) {
+			const usedOnOther = oneShotTracker['mafiaFaction'] && !ds.roleblockTarget;
+			if (usedOnOther) rbSel.disabled = true;
+			const spentEl = $(`#ds-faction-spent-${n}`);
+			if (spentEl) spentEl.classList.toggle('hidden', !usedOnOther);
+		}
+
+		// Split Vigi (one-shot)
+		const svSel = $(`.ds-splitvigi-select[data-night="${n}"]`);
+		if (svSel) {
+			const usedOnOther = oneShotTracker['mafiaFaction'] && !ds.splitVigiTarget;
+			if (usedOnOther) svSel.disabled = true;
+			const spentEl = $(`#ds-faction-spent-${n}`);
+			if (spentEl) spentEl.classList.toggle('hidden', !usedOnOther);
+		}
+
+		// Town Vigi (one-shot)
+		const vSel = $(`.ds-vigi-select[data-night="${n}"]`);
+		if (vSel) {
+			const holder = currentAssignments.find((a) => a.dsRole === 'Vigilante');
+			if (holder && dead.has(holder.name)) {
+				vSel.disabled = true;
+				vSel.value = '';
+				nd.vigiTarget = '';
+				nd.vigiShot = false;
+			}
+			const usedOnOther = oneShotTracker['vigi'] && !nd.vigiShot;
+			if (usedOnOther) vSel.disabled = true;
+			const spentEl = $(`#ds-vigi-spent-${n}`);
+			if (spentEl) spentEl.classList.toggle('hidden', vSel.disabled ? false : !usedOnOther);
+		}
+
+		// Day vote selects
+		if (n > 0) {
+			const daySel = $(`.day-vote-select[data-day="${n}"]`);
+			if (daySel) {
+				const dayDead = getDeadBeforeDay(n);
+				daySel.querySelectorAll('option').forEach((opt) => {
+					opt.disabled = opt.value !== '' && dayDead.has(opt.value);
+				});
+				if (dayDead.has(daySel.value)) {
+					daySel.value = '';
+					dayVotes[n] = '';
+				}
+			}
+		}
+
+		// Reset invalid selections
+		for (const sel of allSels) {
+			if (sel.disabled) continue;
+			const chosen = sel.querySelector(`option[value="${CSS.escape(sel.value)}"]`);
+			if (chosen && chosen.disabled) {
+				sel.value = '';
+				if (sel.classList.contains('maf-select')) {
+					nd.mafKills[parseInt(sel.dataset.kill)] = '';
+				} else if (sel.classList.contains('ds-vigi-select')) {
+					nd.vigiTarget = '';
+					nd.vigiShot = false;
+				} else if (sel.classList.contains('ds-nerfedmedic-select')) {
+					ds[sel.dataset.medicKey] = '';
+				} else if (sel.classList.contains('ds-paritycop-select')) {
+					ds.parityCopTarget = '';
+				} else if (sel.classList.contains('ds-rolecop-select')) {
+					ds.rolecopTarget = '';
+				} else if (sel.classList.contains('ds-roleblock-select')) {
+					ds.roleblockTarget = '';
+				} else if (sel.classList.contains('ds-splitvigi-select')) {
+					ds.splitVigiTarget = '';
+				}
+			}
+		}
+
+		// Vigi active flag for output
+		nd.vigiActive = vSel && !vSel.disabled;
+
+		updateNightOutput(n);
+	}
+
+	// Recalculate one-shot tracker after constraint processing
+	vigiHasShot = nightActions.some((nd) => nd.vigiShot);
+	updateWinIndicator();
+	updateNightButtons();
+	saveState();
+}
+
 function refreshConstraints() {
+	if (gameMode === 'darkstars') return refreshDarkStarsConstraints();
 	const cop = currentAssignments.find((a) => a.position === 4);
 	const medic = currentAssignments.find((a) => a.position === 5);
 	const vigi = currentAssignments.find((a) => a.position === 6);
@@ -1966,7 +2448,511 @@ function addNightSection(nightNum) {
 	refreshConstraints();
 }
 
-function continueToRecord() {
+// --- Dark Stars Night Section ---
+
+function createResultSelect(options, placeholder) {
+	const sel = document.createElement('select');
+	sel.className = 'night-select ds-result-select';
+	const defaultOpt = document.createElement('option');
+	defaultOpt.value = '';
+	defaultOpt.textContent = placeholder;
+	sel.appendChild(defaultOpt);
+	for (const val of options) {
+		const opt = document.createElement('option');
+		opt.value = val;
+		opt.textContent = val;
+		sel.appendChild(opt);
+	}
+	return sel;
+}
+
+function makeDarkStarsNightData(nightNum) {
+	return {
+		night: nightNum,
+		mafKills: ['', ''],
+		vigiTarget: '',
+		vigiShot: false,
+		vigiActive: false,
+		rngs: '',
+		darkStars: {
+			rolecopTarget: '', rolecopResult: '',
+			roleblockTarget: '',
+			splitVigiTarget: '',
+			morticianA: { target: '', result: '' },
+			morticianB: { target: '', result: '' },
+			parityCopTarget: '', parityCopResult: '',
+			nerfedMedicA: '', nerfedMedicB: '',
+		},
+	};
+}
+
+function addDarkStarsNightSection(nightNum) {
+	const setup = DARK_STARS_SETUPS[darkStarsSetup];
+	const nonMafia = currentAssignments.filter((a) => a.role !== 'Mafia');
+	const allReal = currentAssignments;
+	const isN0 = nightNum === 0;
+
+	// Day-start: insert day section before every night (including N1)
+	if (nightNum > 0) {
+		addDaySection(nightNum);
+	}
+
+	const nightData = makeDarkStarsNightData(nightNum);
+	nightActions.push(nightData);
+
+	const section = document.createElement('div');
+	section.className = 'night-section';
+
+	const heading = document.createElement('h3');
+	heading.textContent = `Night ${nightNum}`;
+	section.appendChild(heading);
+
+	// N0: only Parity Cop check (setups 2 & 3)
+	if (isN0) {
+		// Parity Cop N0 check
+		const pcWrapper = document.createElement('div');
+		pcWrapper.className = 'ds-paritycop-wrapper';
+		pcWrapper.dataset.night = nightNum;
+
+		const pcLabel = document.createElement('label');
+		pcLabel.className = 'night-label';
+		pcLabel.textContent = 'Parity Cop (N0 Check)';
+		pcWrapper.appendChild(pcLabel);
+
+		const pcRow = document.createElement('div');
+		pcRow.className = 'night-field-row';
+
+		const pcSel = createPlayerSelect(allReal, 'Select target...');
+		pcSel.classList.add('ds-paritycop-select');
+		pcSel.dataset.night = nightNum;
+		pcSel.addEventListener('change', () => {
+			nightData.darkStars.parityCopTarget = pcSel.value;
+			updateNightOutput(nightNum);
+		});
+		pcRow.appendChild(pcSel);
+
+		pcWrapper.appendChild(pcRow);
+		section.appendChild(pcWrapper);
+
+		// Discord output block
+		const outputBlock = document.createElement('div');
+		outputBlock.className = 'discord-block';
+		const outputHeader = document.createElement('div');
+		outputHeader.className = 'discord-header';
+		const outputTitle = document.createElement('span');
+		outputTitle.textContent = `Night ${nightNum} Output`;
+		outputHeader.appendChild(outputTitle);
+		const copyBtn = document.createElement('button');
+		copyBtn.className = 'btn-copy';
+		copyBtn.dataset.target = `night-output-${nightNum}`;
+		copyBtn.textContent = 'Copy';
+		outputHeader.appendChild(copyBtn);
+		outputBlock.appendChild(outputHeader);
+		const outputPre = document.createElement('pre');
+		outputPre.className = 'discord-pre';
+		outputPre.id = `night-output-${nightNum}`;
+		outputBlock.appendChild(outputPre);
+		section.appendChild(outputBlock);
+
+		$('#nights-container').appendChild(section);
+		refreshConstraints();
+		return;
+	}
+
+	// Mafia Kill 1 (always present, always visible)
+	const mafKill1Wrapper = document.createElement('div');
+	mafKill1Wrapper.className = 'maf-kill-1-wrapper ds-always';
+	mafKill1Wrapper.dataset.night = nightNum;
+
+	const mafLabel1 = document.createElement('label');
+	mafLabel1.className = 'night-label';
+	mafLabel1.textContent = 'Mafia Kill 1';
+	mafKill1Wrapper.appendChild(mafLabel1);
+
+	const mafSel1 = createPlayerSelect(nonMafia, 'Select target...');
+	mafSel1.classList.add('maf-select');
+	mafSel1.dataset.night = nightNum;
+	mafSel1.dataset.kill = '0';
+	mafSel1.addEventListener('change', () => {
+		nightData.mafKills[0] = mafSel1.value;
+		refreshConstraints();
+	});
+	mafKill1Wrapper.appendChild(mafSel1);
+	section.appendChild(mafKill1Wrapper);
+
+	// Mafia Kill 2 (always present in Dark Stars)
+	const mafKill2Wrapper = document.createElement('div');
+	mafKill2Wrapper.className = 'maf-kill-2-wrapper ds-always';
+	mafKill2Wrapper.dataset.night = nightNum;
+
+	const mafLabel2 = document.createElement('label');
+	mafLabel2.className = 'night-label';
+	mafLabel2.textContent = 'Mafia Kill 2';
+	mafKill2Wrapper.appendChild(mafLabel2);
+
+	const mafSel2 = createPlayerSelect(nonMafia, 'Select target...');
+	mafSel2.classList.add('maf-select');
+	mafSel2.dataset.night = nightNum;
+	mafSel2.dataset.kill = '1';
+	mafSel2.addEventListener('change', () => {
+		nightData.mafKills[1] = mafSel2.value;
+		refreshConstraints();
+	});
+	mafKill2Wrapper.appendChild(mafSel2);
+	section.appendChild(mafKill2Wrapper);
+
+	// Mafia Faction Power
+	if (darkStarsSetup === 1) {
+		// Rolecop (every night)
+		const rcWrapper = document.createElement('div');
+		rcWrapper.className = 'ds-rolecop-wrapper';
+		rcWrapper.dataset.night = nightNum;
+
+		const rcLabel = document.createElement('label');
+		rcLabel.className = 'night-label';
+		rcLabel.textContent = 'Rolecop';
+		rcWrapper.appendChild(rcLabel);
+
+		const rcSel = createPlayerSelect(nonMafia, 'Select target...');
+		rcSel.classList.add('ds-rolecop-select');
+		rcSel.dataset.night = nightNum;
+		rcSel.addEventListener('change', () => {
+			nightData.darkStars.rolecopTarget = rcSel.value;
+			refreshConstraints();
+		});
+		rcWrapper.appendChild(rcSel);
+
+		const rcInput = document.createElement('input');
+		rcInput.type = 'text';
+		rcInput.className = 'ds-rolecop-result';
+		rcInput.dataset.night = nightNum;
+		rcInput.placeholder = 'Role result...';
+		rcInput.addEventListener('input', () => {
+			nightData.darkStars.rolecopResult = rcInput.value;
+			updateNightOutput(nightNum);
+		});
+		rcWrapper.appendChild(rcInput);
+
+		section.appendChild(rcWrapper);
+	} else if (darkStarsSetup === 2) {
+		// Roleblock (one-shot)
+		const rbWrapper = document.createElement('div');
+		rbWrapper.className = 'ds-roleblock-wrapper';
+		rbWrapper.dataset.night = nightNum;
+
+		const rbLabel = document.createElement('label');
+		rbLabel.className = 'night-label';
+		rbLabel.textContent = 'Roleblock';
+		rbWrapper.appendChild(rbLabel);
+
+		const rbRow = document.createElement('div');
+		rbRow.className = 'night-field-row';
+
+		const rbSel = createPlayerSelect(allReal, 'Select target...');
+		rbSel.classList.add('ds-roleblock-select');
+		rbSel.dataset.night = nightNum;
+		rbSel.addEventListener('change', () => {
+			nightData.darkStars.roleblockTarget = rbSel.value;
+			if (rbSel.value) oneShotTracker['mafiaFaction'] = true;
+			refreshConstraints();
+		});
+		rbRow.appendChild(rbSel);
+
+		const rbSpent = document.createElement('span');
+		rbSpent.className = 'vigi-spent hidden';
+		rbSpent.id = `ds-faction-spent-${nightNum}`;
+		rbSpent.textContent = 'Already used';
+		rbRow.appendChild(rbSpent);
+
+		rbWrapper.appendChild(rbRow);
+		section.appendChild(rbWrapper);
+	} else if (darkStarsSetup === 3) {
+		// Split Vigi (one-shot, adds a kill)
+		const svWrapper = document.createElement('div');
+		svWrapper.className = 'ds-splitvigi-wrapper';
+		svWrapper.dataset.night = nightNum;
+
+		const svLabel = document.createElement('label');
+		svLabel.className = 'night-label';
+		svLabel.textContent = 'Split Vigi (Mafia)';
+		svWrapper.appendChild(svLabel);
+
+		const svRow = document.createElement('div');
+		svRow.className = 'night-field-row';
+
+		const svSel = createPlayerSelect(nonMafia, 'No shot');
+		svSel.classList.add('ds-splitvigi-select');
+		svSel.dataset.night = nightNum;
+		svSel.addEventListener('change', () => {
+			nightData.darkStars.splitVigiTarget = svSel.value;
+			if (svSel.value) oneShotTracker['mafiaFaction'] = true;
+			refreshConstraints();
+		});
+		svRow.appendChild(svSel);
+
+		const svSpent = document.createElement('span');
+		svSpent.className = 'vigi-spent hidden';
+		svSpent.id = `ds-faction-spent-${nightNum}`;
+		svSpent.textContent = 'Already used';
+		svRow.appendChild(svSpent);
+
+		svWrapper.appendChild(svRow);
+		section.appendChild(svWrapper);
+	}
+
+	// Town Roles — build dynamically from setup definition
+	for (const tr of setup.townRoles) {
+		if (tr.key.startsWith('mortician')) {
+			// Mortician: pick a dead player, get alignment result
+			const mWrapper = document.createElement('div');
+			mWrapper.className = `ds-mortician-wrapper`;
+			mWrapper.dataset.night = nightNum;
+			mWrapper.dataset.mortKey = tr.key;
+
+			const mLabel = document.createElement('label');
+			mLabel.className = 'night-label';
+			mLabel.textContent = tr.label;
+			mWrapper.appendChild(mLabel);
+
+			const mRow = document.createElement('div');
+			mRow.className = 'night-field-row';
+
+			// Target select — will be populated with dead players in refreshConstraints
+			const mSel = createPlayerSelect([], 'No check');
+			mSel.classList.add('ds-mortician-select');
+			mSel.dataset.night = nightNum;
+			mSel.dataset.mortKey = tr.key;
+			mSel.addEventListener('change', () => {
+				nightData.darkStars[tr.key].target = mSel.value;
+				if (mSel.value) oneShotTracker[tr.key] = true;
+				refreshConstraints();
+			});
+			mRow.appendChild(mSel);
+
+			const mResult = createResultSelect(['Town', 'Mafia'], 'Result...');
+			mResult.classList.add('ds-mortician-result');
+			mResult.dataset.night = nightNum;
+			mResult.dataset.mortKey = tr.key;
+			mResult.addEventListener('change', () => {
+				nightData.darkStars[tr.key].result = mResult.value;
+				updateNightOutput(nightNum);
+			});
+			mRow.appendChild(mResult);
+
+			const mSpent = document.createElement('span');
+			mSpent.className = 'vigi-spent hidden';
+			mSpent.id = `ds-${tr.key}-spent-${nightNum}`;
+			mSpent.textContent = 'Already used';
+			mRow.appendChild(mSpent);
+
+			mWrapper.appendChild(mRow);
+			section.appendChild(mWrapper);
+		} else if (tr.key === 'parityCop') {
+			// Parity Cop: pick living player, moderator sets Even/Odd
+			const pcWrapper = document.createElement('div');
+			pcWrapper.className = 'ds-paritycop-wrapper';
+			pcWrapper.dataset.night = nightNum;
+
+			const pcLabel = document.createElement('label');
+			pcLabel.className = 'night-label';
+			pcLabel.textContent = tr.label;
+			pcWrapper.appendChild(pcLabel);
+
+			const pcRow = document.createElement('div');
+			pcRow.className = 'night-field-row';
+
+			const pcSel = createPlayerSelect(allReal, 'Select target...');
+			pcSel.classList.add('ds-paritycop-select');
+			pcSel.dataset.night = nightNum;
+			pcSel.addEventListener('change', () => {
+				nightData.darkStars.parityCopTarget = pcSel.value;
+				refreshConstraints();
+			});
+			pcRow.appendChild(pcSel);
+
+			const pcResult = createResultSelect(['Even', 'Odd'], 'Result...');
+			pcResult.classList.add('ds-paritycop-result');
+			pcResult.dataset.night = nightNum;
+			pcResult.addEventListener('change', () => {
+				nightData.darkStars.parityCopResult = pcResult.value;
+				updateNightOutput(nightNum);
+			});
+			pcRow.appendChild(pcResult);
+
+			pcWrapper.appendChild(pcRow);
+			section.appendChild(pcWrapper);
+		} else if (tr.key.startsWith('nerfedMedic')) {
+			// Nerfed Medic: pick living player (no self, no consecutive repeat)
+			const nmWrapper = document.createElement('div');
+			nmWrapper.className = 'ds-nerfedmedic-wrapper';
+			nmWrapper.dataset.night = nightNum;
+			nmWrapper.dataset.medicKey = tr.key;
+
+			const nmLabel = document.createElement('label');
+			nmLabel.className = 'night-label';
+			nmLabel.textContent = tr.label;
+			nmWrapper.appendChild(nmLabel);
+
+			const holder = currentAssignments.find((a) => a.dsRole === tr.label);
+			const nmTargets = allReal.filter((a) => a.name !== holder?.name);
+			const nmSel = createPlayerSelect(nmTargets, 'No save');
+			nmSel.classList.add('ds-nerfedmedic-select');
+			nmSel.dataset.night = nightNum;
+			nmSel.dataset.medicKey = tr.key;
+			nmSel.addEventListener('change', () => {
+				nightData.darkStars[tr.key] = nmSel.value;
+				refreshConstraints();
+			});
+			nmWrapper.appendChild(nmSel);
+			section.appendChild(nmWrapper);
+		} else if (tr.key === 'vigi') {
+			// Town Vigilante (one-shot)
+			const vWrapper = document.createElement('div');
+			vWrapper.className = 'ds-vigi-wrapper';
+			vWrapper.dataset.night = nightNum;
+
+			const vLabel = document.createElement('label');
+			vLabel.className = 'night-label';
+			vLabel.textContent = tr.label;
+			vWrapper.appendChild(vLabel);
+
+			const vRow = document.createElement('div');
+			vRow.className = 'night-field-row';
+
+			const vigiTargets = allReal.filter((a) => {
+				const holder = currentAssignments.find((h) => h.dsRole === tr.label);
+				return a.name !== holder?.name;
+			});
+			const vSel = createPlayerSelect(vigiTargets, 'Holster');
+			vSel.classList.add('ds-vigi-select');
+			vSel.dataset.night = nightNum;
+			vSel.addEventListener('change', () => {
+				nightData.vigiTarget = vSel.value;
+				nightData.vigiShot = !!vSel.value;
+				if (vSel.value) oneShotTracker['vigi'] = true;
+				refreshConstraints();
+			});
+			vRow.appendChild(vSel);
+
+			const vSpent = document.createElement('span');
+			vSpent.className = 'vigi-spent hidden';
+			vSpent.id = `ds-vigi-spent-${nightNum}`;
+			vSpent.textContent = 'Shot already used';
+			vRow.appendChild(vSpent);
+
+			vWrapper.appendChild(vRow);
+			section.appendChild(vWrapper);
+		}
+	}
+
+	// RNGs input
+	nightData.rngs = '';
+	const rngsLabel = document.createElement('label');
+	rngsLabel.className = 'night-label';
+	rngsLabel.textContent = 'RNGs';
+	section.appendChild(rngsLabel);
+
+	const rngsInput = document.createElement('input');
+	rngsInput.type = 'number';
+	rngsInput.className = 'ds-rngs-input';
+	rngsInput.dataset.night = nightNum;
+	rngsInput.min = '0';
+	rngsInput.placeholder = '0';
+	rngsInput.addEventListener('input', () => {
+		nightData.rngs = rngsInput.value;
+		updateNightOutput(nightNum);
+	});
+	section.appendChild(rngsInput);
+
+	// Discord output block
+	const outputBlock = document.createElement('div');
+	outputBlock.className = 'discord-block';
+
+	const outputHeader = document.createElement('div');
+	outputHeader.className = 'discord-header';
+
+	const outputTitle = document.createElement('span');
+	outputTitle.textContent = `Night ${nightNum} Output`;
+	outputHeader.appendChild(outputTitle);
+
+	const copyBtn = document.createElement('button');
+	copyBtn.className = 'btn-copy';
+	copyBtn.dataset.target = `night-output-${nightNum}`;
+	copyBtn.textContent = 'Copy';
+	outputHeader.appendChild(copyBtn);
+
+	outputBlock.appendChild(outputHeader);
+
+	const outputPre = document.createElement('pre');
+	outputPre.className = 'discord-pre';
+	outputPre.id = `night-output-${nightNum}`;
+	outputBlock.appendChild(outputPre);
+
+	section.appendChild(outputBlock);
+
+	$('#nights-container').appendChild(section);
+	refreshConstraints();
+}
+
+// --- Dark Stars Night Output ---
+
+function generateDarkStarsNightOutput(nightData) {
+	const ds = nightData.darkStars;
+	const kills = [...new Set(nightData.mafKills.filter(Boolean))];
+	let output = '';
+
+	if (kills.length) {
+		output += `mafia: ||killed ${kills.join(', ')}||\n`;
+	}
+
+	// Mafia faction power
+	if (darkStarsSetup === 1 && ds.rolecopTarget) {
+		output += `rolecop: ||checked ${ds.rolecopTarget}${ds.rolecopResult ? ' — ' + ds.rolecopResult : ''}||\n`;
+	} else if (darkStarsSetup === 2 && ds.roleblockTarget) {
+		output += `roleblock: ||blocked ${ds.roleblockTarget}||\n`;
+	} else if (darkStarsSetup === 3 && ds.splitVigiTarget) {
+		output += `split vigi: ||shot ${ds.splitVigiTarget}||\n`;
+	}
+
+	// Town roles
+	if (ds.morticianA?.target) {
+		output += `mortician A: ||checked ${ds.morticianA.target}${ds.morticianA.result ? ' — ' + ds.morticianA.result : ''}||\n`;
+	}
+	if (ds.morticianB?.target) {
+		output += `mortician B: ||checked ${ds.morticianB.target}${ds.morticianB.result ? ' — ' + ds.morticianB.result : ''}||\n`;
+	}
+	if (ds.parityCopTarget) {
+		output += `parity cop: ||checked ${ds.parityCopTarget}${ds.parityCopResult ? ' — ' + ds.parityCopResult : ''}||\n`;
+	}
+	if (ds.nerfedMedicA) {
+		output += `medic${ds.nerfedMedicB !== undefined ? ' A' : ''}: ||saved ${ds.nerfedMedicA}||\n`;
+	}
+	if (ds.nerfedMedicB) {
+		output += `medic B: ||saved ${ds.nerfedMedicB}||\n`;
+	}
+
+	if (nightData.vigiTarget) {
+		output += `vigi: ||shot ${nightData.vigiTarget}||\n`;
+	} else if (nightData.vigiActive) {
+		output += `vigi: ||holstered||\n`;
+	}
+
+	if (nightData.rngs !== '') {
+		output += `rngs: ${nightData.rngs}`;
+	}
+
+	return output.trimEnd();
+}
+
+async function continueToRecord() {
+	if (gameMode === 'darkstars') {
+		const winResult = checkWinCondition();
+		const winText = winResult ? `${winResult.winner} wins!` : 'Game in progress';
+		if (await confirmAction(`End Dark Stars game?<br><br>${winText}<br>This game will not be recorded.`)) {
+			newGame();
+		}
+		return;
+	}
 	renderEditableAssignments();
 	if (currentFormals) {
 		renderFormals(currentFormals, $('#locked-formals'));
@@ -2011,6 +2997,7 @@ function saveState() {
 	const state = {
 		currentAssignments, currentFormals, nightActions,
 		dayVotes, vigiHasShot, rollCount, gameMode,
+		gameVariant, darkStarsSetup, oneShotTracker, darkStarsNames,
 		activePanel: $('.panel:not(.hidden)')?.id,
 	};
 	const n0 = [...$$('#night0-checks input:checked')].map((cb) => cb.value);
@@ -2058,14 +3045,69 @@ function restoreSelectValues(savedNights, savedDayVotes) {
 	}
 }
 
+function restoreDarkStarsSelectValues(savedNights, savedDayVotes) {
+	for (const nd of savedNights) {
+		const n = nd.night;
+		const mafSel1 = $(`.maf-select[data-night="${n}"][data-kill="0"]`);
+		const mafSel2 = $(`.maf-select[data-night="${n}"][data-kill="1"]`);
+		if (mafSel1) mafSel1.value = nd.mafKills[0];
+		if (mafSel2) mafSel2.value = nd.mafKills[1];
+
+		const ds = nd.darkStars;
+		if (!ds) continue;
+
+		const rcSel = $(`.ds-rolecop-select[data-night="${n}"]`);
+		const rcInput = $(`.ds-rolecop-result[data-night="${n}"]`);
+		if (rcSel) rcSel.value = ds.rolecopTarget;
+		if (rcInput) rcInput.value = ds.rolecopResult;
+
+		const rbSel = $(`.ds-roleblock-select[data-night="${n}"]`);
+		if (rbSel) rbSel.value = ds.roleblockTarget;
+
+		const svSel = $(`.ds-splitvigi-select[data-night="${n}"]`);
+		if (svSel) svSel.value = ds.splitVigiTarget;
+
+		const pcSel = $(`.ds-paritycop-select[data-night="${n}"]`);
+		const pcResult = $(`.ds-paritycop-result[data-night="${n}"]`);
+		if (pcSel) pcSel.value = ds.parityCopTarget;
+		if (pcResult) pcResult.value = ds.parityCopResult;
+
+		// Mortician selects are populated in refreshConstraints, so values are set after
+		$$(`[data-night="${n}"].ds-nerfedmedic-select`).forEach((sel) => {
+			const key = sel.dataset.medicKey;
+			if (ds[key]) sel.value = ds[key];
+		});
+
+		const vSel = $(`.ds-vigi-select[data-night="${n}"]`);
+		if (vSel) vSel.value = nd.vigiTarget;
+
+		const rngsInput = $(`.ds-rngs-input[data-night="${n}"]`);
+		if (rngsInput && nd.rngs !== '') rngsInput.value = nd.rngs;
+	}
+	for (const [day, name] of Object.entries(savedDayVotes)) {
+		const sel = $(`.day-vote-select[data-day="${day}"]`);
+		if (sel) sel.value = name;
+	}
+}
+
 function rebuildGamePanel(savedNights, savedDayVotes) {
-	$('#role-reveal-pre').textContent = generateRoleReveal();
+	if (gameMode === 'darkstars') {
+		$('#role-reveal-pre').textContent = generateDarkStarsRoleReveal();
+		$('#btn-continue-record').textContent = 'End Game';
+	} else {
+		$('#role-reveal-pre').textContent = generateRoleReveal();
+		$('#btn-continue-record').textContent = 'Continue to Record';
+	}
 	$('#nights-container').innerHTML = '';
 	nightActions = [];
 	dayVotes = {};
 
 	for (const nd of savedNights) {
-		addNightSection(nd.night);
+		if (gameMode === 'darkstars') {
+			addDarkStarsNightSection(nd.night);
+		} else {
+			addNightSection(nd.night);
+		}
 	}
 
 	// Overwrite fresh nightActions with saved data
@@ -2074,8 +3116,26 @@ function rebuildGamePanel(savedNights, savedDayVotes) {
 	}
 	Object.assign(dayVotes, savedDayVotes);
 
-	restoreSelectValues(savedNights, savedDayVotes);
-	refreshConstraints();
+	if (gameMode === 'darkstars') {
+		restoreDarkStarsSelectValues(savedNights, savedDayVotes);
+		refreshConstraints();
+		// Restore mortician values after refresh (options are rebuilt there)
+		for (const nd of savedNights) {
+			const ds = nd.darkStars;
+			if (!ds) continue;
+			$$(`[data-night="${nd.night}"].ds-mortician-select`).forEach((sel) => {
+				const key = sel.dataset.mortKey;
+				if (ds[key]?.target) sel.value = ds[key].target;
+			});
+			$$(`[data-night="${nd.night}"].ds-mortician-result`).forEach((sel) => {
+				const key = sel.dataset.mortKey;
+				if (ds[key]?.result) sel.value = ds[key].result;
+			});
+		}
+	} else {
+		restoreSelectValues(savedNights, savedDayVotes);
+		refreshConstraints();
+	}
 	updateNightButtons();
 }
 
@@ -2086,6 +3146,23 @@ async function restoreState() {
 	try {
 		const state = JSON.parse(raw);
 		gameMode = state.gameMode || 'randomize';
+		gameVariant = state.gameVariant || 'allstars';
+		darkStarsSetup = state.darkStarsSetup || null;
+		oneShotTracker = state.oneShotTracker || {};
+		darkStarsNames = state.darkStarsNames || [];
+
+		// Restore Dark Stars setup panel
+		if (state.activePanel === 'panel-randomize' && gameMode === 'darkstars' && state.currentAssignments) {
+			currentAssignments = state.currentAssignments;
+			$('#assignments-display').classList.add('hidden');
+			$('#manual-setup').classList.add('hidden');
+			$('#retro-form').classList.add('hidden');
+			$('#darkstars-setup').classList.remove('hidden');
+			renderDarkStarsSetupInfo();
+			renderDarkStarsPlayerList();
+			showPanel('panel-randomize');
+			return true;
+		}
 
 		// Restore manual/retro state on randomize panel even without assignments
 		if (state.activePanel === 'panel-randomize' && gameMode === 'manual' && state.manualNames) {
@@ -2256,6 +3333,22 @@ document.addEventListener('DOMContentLoaded', () => {
 			saveState();
 		});
 	});
+
+	// Dark Stars
+	$('#btn-darkstars').addEventListener('click', async () => {
+		await fillRandomPool(50);
+		doDarkStarsSetup();
+	});
+	$('#btn-darkstars-cancel').addEventListener('click', () => {
+		$('#darkstars-setup').classList.add('hidden');
+		gameMode = 'randomize';
+		gameVariant = 'allstars';
+		darkStarsSetup = null;
+		currentAssignments = null;
+		saveState();
+	});
+	$('#btn-darkstars-reroll').addEventListener('click', rerollDarkStarsSetup);
+	$('#btn-darkstars-accept').addEventListener('click', acceptDarkStarsSetup);
 
 	loadPlayerNames().then(async () => {
 		const restored = await restoreState();

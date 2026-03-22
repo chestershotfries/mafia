@@ -1018,6 +1018,61 @@ textarea:focus {
 	background: rgba(217, 122, 80, 0.3);
 }
 
+.player-toggle.ds-power {
+	border-color: #9b59b6;
+	background: rgba(155, 89, 182, 0.2);
+	color: #9b59b6;
+}
+
+.player-toggle.ds-power:hover {
+	background: rgba(155, 89, 182, 0.3);
+}
+
+.btn-ds {
+	border-color: #9b59b6 !important;
+	color: #9b59b6 !important;
+}
+
+.btn-ds:hover {
+	background: rgba(155, 89, 182, 0.15) !important;
+}
+
+.darkstars-info {
+	background: rgba(155, 89, 182, 0.1);
+	border: 1px solid rgba(155, 89, 182, 0.3);
+	border-radius: var(--radius);
+	padding: 0.8rem 1rem;
+	margin: 0.5rem 0 1rem;
+	line-height: 1.8;
+}
+
+.ds-rolecop-result {
+	background: var(--surface);
+	border: 1px solid var(--border);
+	border-radius: var(--radius);
+	color: var(--text);
+	padding: 0.4rem 0.6rem;
+	font-family: inherit;
+	font-size: 0.95rem;
+	width: 150px;
+}
+
+.ds-rngs-input {
+	background: var(--surface);
+	border: 1px solid var(--border);
+	border-radius: var(--radius);
+	color: var(--text);
+	padding: 0.4rem 0.6rem;
+	font-family: inherit;
+	font-size: 0.95rem;
+	width: 60px;
+}
+
+.ds-result-select {
+	width: auto;
+	min-width: 100px;
+}
+
 .hidden {
 	display: none;
 }
