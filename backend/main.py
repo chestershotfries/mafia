@@ -30,6 +30,19 @@ TOWN_GHOST_SIGMA = 0.8
 # =============================================
 GAME_PASSWORD = "turtlesarefast"
 
+# Canonical name aliases — normalize variant spellings on record
+NAME_ALIASES = {
+    "AA": "Doublea",
+    "BP": "Badpants",
+    "schmittball": "Smit",
+    "Schmittball": "Smit",
+    "Smitball": "Smit",
+    "Smittball": "Smit",
+    "Brown Kow": "Brownkow",
+    "Striker": "Strik3r",
+    "Decode": "Matt (Decode)",
+}
+
 POSITION_ROLES = {
     1: "Mafia",
     2: "Mafia",
@@ -133,6 +146,110 @@ def sort_stats_summary(ss):
     last_row = len(ws.get_all_values())
     if last_row > 1:
         ws.sort((12, "des"), range=f"A2:L{last_row}")
+    format_stats_summary(ss, ws, last_row)
+
+
+def format_stats_summary(ss, ws, last_row):
+    """Apply alternating row colors and borders to Stats Summary."""
+    if last_row < 1:
+        return
+
+    sheet_id = ws.id
+    requests = []
+
+    # Remove existing banded ranges on this sheet
+    meta = ss.fetch_sheet_metadata(params={
+        "fields": "sheets(properties.sheetId,bandedRanges)"
+    })
+    for sheet in meta.get("sheets", []):
+        if sheet["properties"]["sheetId"] == sheet_id:
+            for banding in sheet.get("bandedRanges", []):
+                requests.append({
+                    "deleteBanding": {
+                        "bandedRangeId": banding["bandedRangeId"]
+                    }
+                })
+            break
+
+    # Add banded range for alternating row colors
+    requests.append({
+        "addBanding": {
+            "bandedRange": {
+                "range": {
+                    "sheetId": sheet_id,
+                    "startRowIndex": 0,
+                    "endRowIndex": last_row,
+                    "startColumnIndex": 0,
+                    "endColumnIndex": 12,
+                },
+                "rowProperties": {
+                    "headerColor": {
+                        "red": 0.208, "green": 0.408, "blue": 0.329,
+                    },
+                    "firstBandColor": {
+                        "red": 1.0, "green": 1.0, "blue": 1.0,
+                    },
+                    "secondBandColor": {
+                        "red": 0.965, "green": 0.973, "blue": 0.976,
+                    },
+                },
+            }
+        }
+    })
+
+    # Outer border around entire block
+    border = {"style": "SOLID", "color": {"red": 0.0, "green": 0.0, "blue": 0.0}}
+    requests.append({
+        "updateBorders": {
+            "range": {
+                "sheetId": sheet_id,
+                "startRowIndex": 0,
+                "endRowIndex": last_row,
+                "startColumnIndex": 0,
+                "endColumnIndex": 12,
+            },
+            "top": border,
+            "bottom": border,
+            "left": border,
+            "right": border,
+        }
+    })
+
+    # Vertical borders on both sides of Rating column (L, index 11)
+    requests.append({
+        "updateBorders": {
+            "range": {
+                "sheetId": sheet_id,
+                "startRowIndex": 0,
+                "endRowIndex": last_row,
+                "startColumnIndex": 11,
+                "endColumnIndex": 12,
+            },
+            "left": border,
+            "right": border,
+        }
+    })
+
+    # Vertically center all text
+    requests.append({
+        "repeatCell": {
+            "range": {
+                "sheetId": sheet_id,
+                "startRowIndex": 0,
+                "endRowIndex": last_row,
+                "startColumnIndex": 0,
+                "endColumnIndex": 12,
+            },
+            "cell": {
+                "userEnteredFormat": {
+                    "verticalAlignment": "MIDDLE",
+                }
+            },
+            "fields": "userEnteredFormat.verticalAlignment",
+        }
+    })
+
+    ss.batch_update({"requests": requests})
 
 
 def parse_pct(val):
@@ -206,6 +323,11 @@ def record_game(body):
     winner = body["winner"]
     night0_kills = body.get("night0_kills", [])
     mafia_won = winner == "Mafia"
+
+    # Normalize variant names to canonical spellings
+    for a in assignments:
+        a["name"] = NAME_ALIASES.get(a["name"], a["name"])
+    night0_kills = [NAME_ALIASES.get(n, n) for n in night0_kills]
 
     # Filter for rating: exclude ghosts and N0 kills
     rated = [
