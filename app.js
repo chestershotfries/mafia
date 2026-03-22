@@ -6,6 +6,16 @@ const SCRIPT_URL = 'https://us-central1-mafia-tracker-310960.cloudfunctions.net/
 const GHOST_NAME = 'Ghost';
 const RANDOM_ORG_API_KEY = '93e00e92-f44b-4b59-993a-309ecee52caa';
 
+function isGhostEntry(name) {
+	return name === GHOST_NAME || name.startsWith(GHOST_NAME + ' ');
+}
+
+function makeGhostNames(count) {
+	if (count === 0) return [];
+	if (count === 1) return [GHOST_NAME];
+	return Array.from({length: count}, (_, i) => `${GHOST_NAME} ${i + 1}`);
+}
+
 let randomPool = [];
 let poolIndex = 0;
 
@@ -200,7 +210,6 @@ function buildAssignments(names, roleMap) {
 	const medic = names.find((n) => roleMap.get(n) === 'Medic');
 	const vigi = names.find((n) => roleMap.get(n) === 'Vigi');
 	const regularTown = names.filter((n) => !roleMap.has(n) || roleMap.get(n) === 'Town');
-	const numGhosts = 15 - names.length;
 
 	const assignments = [];
 	// Positions 1-3: Mafia
@@ -210,24 +219,17 @@ function buildAssignments(names, roleMap) {
 	// Position 4: Cop, 5: Medic, 6: Vigi (or ghost if unassigned)
 	[cop, medic, vigi].forEach((name, i) => {
 		if (name) {
-			assignments.push({ position: i + 4, name, role: 'Town', is_ghost: false });
+			const ghost = isGhostEntry(name);
+			assignments.push({ position: i + 4, name: ghost ? GHOST_NAME : name, role: 'Town', is_ghost: ghost });
 		} else {
 			assignments.push({ position: i + 4, name: GHOST_NAME, role: 'Town', is_ghost: true });
 		}
 	});
 	// Positions 7+: regular town
 	regularTown.forEach((name, i) => {
-		assignments.push({ position: i + 7, name, role: 'Town', is_ghost: false });
+		const ghost = isGhostEntry(name);
+		assignments.push({ position: i + 7, name: ghost ? GHOST_NAME : name, role: 'Town', is_ghost: ghost });
 	});
-	// Fill remaining with ghosts
-	while (assignments.length < 15) {
-		assignments.push({
-			position: assignments.length + 1,
-			name: GHOST_NAME,
-			role: 'Town',
-			is_ghost: true,
-		});
-	}
 	return assignments;
 }
 
@@ -762,77 +764,86 @@ function renderManualPlayerList(names, containerId, roleMap, onChange, skipMatch
 
 	for (let i = 0; i < names.length; i++) {
 		const name = names[i];
+		const ghost = isGhostEntry(name);
 		const item = document.createElement('div');
 		item.className = 'manual-player-item';
 
-		// Name button — click to inline edit
-		const nameBtn = document.createElement('button');
-		nameBtn.type = 'button';
-		nameBtn.className = 'player-name-btn';
-		nameBtn.textContent = name;
-		nameBtn.title = 'Click to edit name';
-		nameBtn.addEventListener('click', () => {
-			startManualNameEdit(i, names, nameBtn, containerId, roleMap, onChange, skipMatchSet);
-		});
-		item.appendChild(nameBtn);
-
-		// Name matching badges/suggestions
-		const exactMatch = knownPlayers.some((p) => p.toLowerCase() === name.toLowerCase());
-		const suggestion = skipMatchSet.has(name) ? null : findClosestPlayer(name, used);
-
-		if (skipMatchSet.has(name)) {
-			const badge = document.createElement('span');
-			badge.className = 'name-match-badge new-player';
-			badge.textContent = 'new player';
-			item.appendChild(badge);
-		} else if (suggestion) {
-			const sugBtn = document.createElement('button');
-			sugBtn.type = 'button';
-			sugBtn.className = 'name-suggestion-btn';
-			sugBtn.innerHTML = `&rarr; ${suggestion}?`;
-			sugBtn.title = `Rename to "${suggestion}"`;
-			sugBtn.addEventListener('click', () => {
-				const oldName = names[i];
-				if (roleMap.has(oldName)) {
-					roleMap.set(suggestion, roleMap.get(oldName));
-					roleMap.delete(oldName);
-				}
-				names[i] = suggestion;
-				if (containerId === 'retro-player-list') {
-					const checkedN0 = [...$$('#retro-n0-checks input:checked')].map((cb) => cb.value);
-					const updatedChecked = checkedN0.map((n) => n === oldName ? suggestion : n);
-					buildRetroN0Checks();
-					$$('#retro-n0-checks input[type="checkbox"]').forEach((cb) => {
-						cb.checked = updatedChecked.includes(cb.value);
-					});
-				}
-				renderManualPlayerList(names, containerId, roleMap, onChange, skipMatchSet);
-				onChange();
-				saveState();
-				showToast(`Renamed "${oldName}" to "${suggestion}"`, true);
-			});
-			item.appendChild(sugBtn);
-		} else if (exactMatch) {
-			const badge = document.createElement('span');
-			badge.className = 'name-match-badge matched';
-			badge.textContent = 'matched';
-			item.appendChild(badge);
-
-			const notBtn = document.createElement('button');
-			notBtn.type = 'button';
-			notBtn.className = 'name-notmatch-btn';
-			notBtn.textContent = 'not them?';
-			notBtn.title = 'Mark as a different player with the same name';
-			notBtn.addEventListener('click', () => {
-				skipMatchSet.add(name);
+		if (ghost) {
+			// Ghost: static label, no editing
+			const label = document.createElement('span');
+			label.className = 'player-name-btn ghost-label';
+			label.textContent = name;
+			item.appendChild(label);
+		} else {
+			// Name button — click to inline edit
+			const nameBtn = document.createElement('button');
+			nameBtn.type = 'button';
+			nameBtn.className = 'player-name-btn';
+			nameBtn.textContent = name;
+			nameBtn.title = 'Click to edit name';
+			nameBtn.addEventListener('click', () => {
 				startManualNameEdit(i, names, nameBtn, containerId, roleMap, onChange, skipMatchSet);
 			});
-			item.appendChild(notBtn);
-		} else {
-			const badge = document.createElement('span');
-			badge.className = 'name-match-badge new-player';
-			badge.textContent = 'new player';
-			item.appendChild(badge);
+			item.appendChild(nameBtn);
+
+			// Name matching badges/suggestions
+			const exactMatch = knownPlayers.some((p) => p.toLowerCase() === name.toLowerCase());
+			const suggestion = skipMatchSet.has(name) ? null : findClosestPlayer(name, used);
+
+			if (skipMatchSet.has(name)) {
+				const badge = document.createElement('span');
+				badge.className = 'name-match-badge new-player';
+				badge.textContent = 'new player';
+				item.appendChild(badge);
+			} else if (suggestion) {
+				const sugBtn = document.createElement('button');
+				sugBtn.type = 'button';
+				sugBtn.className = 'name-suggestion-btn';
+				sugBtn.innerHTML = `&rarr; ${suggestion}?`;
+				sugBtn.title = `Rename to "${suggestion}"`;
+				sugBtn.addEventListener('click', () => {
+					const oldName = names[i];
+					if (roleMap.has(oldName)) {
+						roleMap.set(suggestion, roleMap.get(oldName));
+						roleMap.delete(oldName);
+					}
+					names[i] = suggestion;
+					if (containerId === 'retro-player-list') {
+						const checkedN0 = [...$$('#retro-n0-checks input:checked')].map((cb) => cb.value);
+						const updatedChecked = checkedN0.map((n) => n === oldName ? suggestion : n);
+						buildRetroN0Checks();
+						$$('#retro-n0-checks input[type="checkbox"]').forEach((cb) => {
+							cb.checked = updatedChecked.includes(cb.value);
+						});
+					}
+					renderManualPlayerList(names, containerId, roleMap, onChange, skipMatchSet);
+					onChange();
+					saveState();
+					showToast(`Renamed "${oldName}" to "${suggestion}"`, true);
+				});
+				item.appendChild(sugBtn);
+			} else if (exactMatch) {
+				const badge = document.createElement('span');
+				badge.className = 'name-match-badge matched';
+				badge.textContent = 'matched';
+				item.appendChild(badge);
+
+				const notBtn = document.createElement('button');
+				notBtn.type = 'button';
+				notBtn.className = 'name-notmatch-btn';
+				notBtn.textContent = 'not them?';
+				notBtn.title = 'Mark as a different player with the same name';
+				notBtn.addEventListener('click', () => {
+					skipMatchSet.add(name);
+					startManualNameEdit(i, names, nameBtn, containerId, roleMap, onChange, skipMatchSet);
+				});
+				item.appendChild(notBtn);
+			} else {
+				const badge = document.createElement('span');
+				badge.className = 'name-match-badge new-player';
+				badge.textContent = 'new player';
+				item.appendChild(badge);
+			}
 		}
 
 		// Role button — click to cycle role
@@ -841,11 +852,12 @@ function renderManualPlayerList(names, containerId, roleMap, onChange, skipMatch
 		const currentRole = roleMap.get(name) || 'Town';
 		roleBtn.className = 'player-toggle' + (ROLE_CSS[currentRole] ? ` ${ROLE_CSS[currentRole]}` : '');
 		roleBtn.textContent = currentRole;
+		const cycle = ghost ? ROLE_CYCLE.filter(r => r !== 'Mafia') : ROLE_CYCLE;
 		roleBtn.addEventListener('click', () => {
 			const role = roleMap.get(name) || 'Town';
-			const idx = ROLE_CYCLE.indexOf(role);
-			for (let step = 1; step <= ROLE_CYCLE.length; step++) {
-				const next = ROLE_CYCLE[(idx + step) % ROLE_CYCLE.length];
+			const idx = cycle.indexOf(role);
+			for (let step = 1; step <= cycle.length; step++) {
+				const next = cycle[(idx + step) % cycle.length];
 				if (next === 'Town') {
 					roleMap.delete(name);
 					roleBtn.className = 'player-toggle';
@@ -873,6 +885,7 @@ function doManualSetup() {
 	try {
 		manualNames = validateNames(raw);
 		for (let i = 0; i < manualNames.length; i++) manualNames[i] = correctCase(manualNames[i]);
+		manualNames.push(...makeGhostNames(15 - manualNames.length));
 		gameMode = 'manual';
 		manualRoleMap = new Map();
 		manualSkipMatch = new Set();
@@ -920,6 +933,7 @@ function doRetroEntry() {
 	try {
 		retroNames = validateNames(raw);
 		for (let i = 0; i < retroNames.length; i++) retroNames[i] = correctCase(retroNames[i]);
+		retroNames.push(...makeGhostNames(15 - retroNames.length));
 		gameMode = 'retroactive';
 		retroRoleMap = new Map();
 		retroSkipMatch = new Set();
@@ -936,7 +950,7 @@ function doRetroEntry() {
 		$$('input[name="retro-winner"]').forEach((r) => (r.checked = false));
 		buildRetroN0Checks();
 		$('#retro-mafia-counter').textContent = roleCounterText(retroRoleMap);
-		$('#retro-rated-preview').textContent = `${retroNames.length} players will be rated`;
+		$('#retro-rated-preview').textContent = `${retroNames.filter(n => !isGhostEntry(n)).length} players will be rated`;
 		$('#btn-retro-submit').disabled = true;
 		saveState();
 	} catch (e) {
@@ -947,7 +961,7 @@ function doRetroEntry() {
 function buildRetroN0Checks() {
 	const checks = $('#retro-n0-checks');
 	checks.innerHTML = '';
-	for (const name of retroNames) {
+	for (const name of retroNames.filter(n => !isGhostEntry(n))) {
 		const label = document.createElement('label');
 		const cb = document.createElement('input');
 		cb.type = 'checkbox';
@@ -963,7 +977,8 @@ function updateRetroForm() {
 	$('#retro-mafia-counter').textContent = roleCounterText(retroRoleMap);
 
 	const n0 = [...$$('#retro-n0-checks input:checked')].map((cb) => cb.value);
-	const rated = retroNames.length - n0.length;
+	const realCount = retroNames.filter(n => !isGhostEntry(n)).length;
+	const rated = realCount - n0.length;
 	$('#retro-rated-preview').textContent = `${rated} players will be rated`;
 
 	const winner = document.querySelector('input[name="retro-winner"]:checked');
@@ -1502,10 +1517,17 @@ function updateWinIndicator() {
 function addNightKills(deadSet, nightIndex) {
 	const nd = nightActions[nightIndex];
 	if (!nd) return;
+	const killCounts = {};
 	for (const kill of nd.mafKills) {
-		if (kill && kill !== nd.medicSave) deadSet.add(kill);
+		if (kill) killCounts[kill] = (killCounts[kill] || 0) + 1;
 	}
-	if (nd.vigiTarget) deadSet.add(nd.vigiTarget);
+	if (nd.vigiTarget) killCounts[nd.vigiTarget] = (killCounts[nd.vigiTarget] || 0) + 1;
+	if (nd.medicSave && killCounts[nd.medicSave]) {
+		killCounts[nd.medicSave]--;
+	}
+	for (const [name, count] of Object.entries(killCounts)) {
+		if (count > 0) deadSet.add(name);
+	}
 }
 
 function getDeadBeforeNight(n) {
@@ -1959,7 +1981,12 @@ function continueToRecord() {
 	// Auto-check N0 mafia kill targets
 	if (nightActions.length > 0) {
 		const n0Medic = nightActions[0].medicSave;
-		const n0Kills = [...new Set(nightActions[0].mafKills.filter(k => k && k !== n0Medic))];
+		const n0KillCounts = {};
+		for (const k of nightActions[0].mafKills) {
+			if (k) n0KillCounts[k] = (n0KillCounts[k] || 0) + 1;
+		}
+		if (n0Medic && n0KillCounts[n0Medic]) n0KillCounts[n0Medic]--;
+		const n0Kills = Object.entries(n0KillCounts).filter(([, c]) => c > 0).map(([name]) => name);
 		$$('#night0-checks input[type="checkbox"]').forEach((cb) => {
 			cb.checked = n0Kills.includes(cb.value);
 		});
