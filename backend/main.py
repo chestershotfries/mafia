@@ -738,7 +738,7 @@ def get_player_history(body):
 
 
 def get_match_history():
-    """Return all games grouped by GameID, newest first."""
+    """Return all games as last-game-style payloads, newest first."""
     ss = get_sheet()
     ws = ss.worksheet("MatchHistory")
     rows = ws.get_all_values()[1:]
@@ -751,29 +751,32 @@ def get_match_history():
         if gid not in games:
             games[gid] = {
                 "game_id": int(float(gid)),
-                "mafia": [],
-                "town": [],
-                "n0": [],
-                "ghosts": [],
                 "winner": None,
+                "players": [],
             }
             order.append(gid)
         g = games[gid]
-        name, alignment, result = r[1], r[2], r[3]
-        if result == "Ghost":
-            g["ghosts"].append(name)
-            continue
-        if result == "Night Zero":
-            g["n0"].append(name)
-        if alignment == "Mafia":
-            g["mafia"].append(name)
-        else:
-            g["town"].append({"name": name, "role": "Town"})
+        name, role, result = r[1], r[2], r[3]
+        entry = {
+            "player": name,
+            "role": role,
+            "alignment": "Mafia" if role == "Mafia" else "Town",
+            "result": result,
+            "rate_change": int(float(r[4])) if r[4] else 0,
+        }
+        if r[5]:
+            entry.update({
+                "old_mu": float(r[5]),
+                "new_mu": float(r[6]),
+                "new_sigma": float(r[7]),
+                "old_rating": int(float(r[8])),
+                "new_rating": int(float(r[9])),
+                "old_sigma": float(r[10]),
+            })
+        g["players"].append(entry)
         if g["winner"] is None and result in ("Win", "Loss"):
-            g["winner"] = (
-                alignment if result == "Win"
-                else ("Town" if alignment == "Mafia" else "Mafia")
-            )
+            align = "Mafia" if role == "Mafia" else "Town"
+            g["winner"] = align if result == "Win" else ("Town" if align == "Mafia" else "Mafia")
     return {"games": [games[gid] for gid in order]}
 
 
