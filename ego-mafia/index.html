@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ego Mafia</title>
+  <link rel="stylesheet" href="../style.css">
+  <link rel="stylesheet" href="../stats.css">
+  <link rel="stylesheet" href="./ego.css">
+</head>
+<body>
+  <div class="container">
+    <div class="stats-header">
+      <h1>Ego Mafia</h1>
+      <a href="./stats.html" class="btn btn-secondary">Stats</a>
+    </div>
+
+    <div class="stats-cards">
+      <div class="stat-card">
+        <span class="stat-value" id="stat-total-games">--</span>
+        <span class="stat-label">Games</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-value mafia" id="stat-mafia-pct">--</span>
+        <span class="stat-label">Mafia Win %</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-value town" id="stat-town-pct">--</span>
+        <span class="stat-label">Town Win %</span>
+      </div>
+    </div>
+
+    <section class="panel">
+      <h2>Match History</h2>
+      <div id="games-list" class="games-list"></div>
+    </section>
+
+    <div id="toast" class="toast hidden"></div>
+  </div>
+
+  <script src="./app.js"></script>
+</body>
+</html>
