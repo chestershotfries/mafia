@@ -1,5 +1,6 @@
 functions-framework
 gspread
 google-auth
+google-cloud-storage
 trueskill
 scipy
