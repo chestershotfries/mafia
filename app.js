@@ -3347,12 +3347,12 @@ document.addEventListener('DOMContentLoaded', () => {
 		});
 	});
 
-	// Dark Stars
-	$('#btn-darkstars').addEventListener('click', async () => {
+	// Dark Stars (optional — ego-mafia/index.html omits these elements)
+	$('#btn-darkstars')?.addEventListener('click', async () => {
 		await fillRandomPool(50);
 		doDarkStarsSetup();
 	});
-	$('#btn-darkstars-cancel').addEventListener('click', () => {
+	$('#btn-darkstars-cancel')?.addEventListener('click', () => {
 		$('#darkstars-setup').classList.add('hidden');
 		gameMode = 'randomize';
 		gameVariant = 'allstars';
@@ -3360,8 +3360,8 @@ document.addEventListener('DOMContentLoaded', () => {
 		currentAssignments = null;
 		saveState();
 	});
-	$('#btn-darkstars-reroll').addEventListener('click', rerollDarkStarsSetup);
-	$('#btn-darkstars-accept').addEventListener('click', acceptDarkStarsSetup);
+	$('#btn-darkstars-reroll')?.addEventListener('click', rerollDarkStarsSetup);
+	$('#btn-darkstars-accept')?.addEventListener('click', acceptDarkStarsSetup);
 
 	loadPlayerNames().then(async () => {
 		const restored = await restoreState();
