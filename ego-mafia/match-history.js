@@ -1,4 +1,5 @@
-/* Ego Mafia Match History — last-game-style table per game (reads data.json) */
+/* Ego Mafia Match History — last-game-style table per game.
+ * Reads window.SCRIPT_URL when set (Cloud Function), else ./data.json. */
 
 const $ = (sel) => document.querySelector(sel);
 
@@ -25,15 +26,38 @@ function showToast(msg) {
 	toast._timer = setTimeout(() => toast.classList.add('hidden'), 4000);
 }
 
+async function api(action, data = {}) {
+	const resp = await fetch(window.SCRIPT_URL, {
+		method: 'POST',
+		headers: { 'Content-Type': 'application/json' },
+		body: JSON.stringify({ action, ...data }),
+	});
+	const result = await resp.json();
+	if (result.error) throw new Error(result.error);
+	return result;
+}
+
 async function load() {
 	try {
-		const resp = await fetch('./data.json', { cache: 'no-cache' });
-		if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-		const data = await resp.json();
+		let players, games;
+		if (window.SCRIPT_URL) {
+			const [stats, mh] = await Promise.all([
+				api('getStats'),
+				api('getMatchHistory'),
+			]);
+			players = stats.players;
+			games = mh.games;
+		} else {
+			const resp = await fetch('./data.json', { cache: 'no-cache' });
+			if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+			const data = await resp.json();
+			players = data.players;
+			games = data.games;
+		}
 		const rankMap = new Map();
-		const byRating = [...(data.players || [])].sort((a, b) => b.rating - a.rating);
+		const byRating = [...(players || [])].sort((a, b) => b.rating - a.rating);
 		byRating.forEach((p, i) => rankMap.set(p.name, i + 1));
-		render(data.games || [], rankMap);
+		render(games || [], rankMap);
 	} catch (e) {
 		showToast('Failed to load match history: ' + e.message);
 	}

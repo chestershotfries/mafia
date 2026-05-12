@@ -1,4 +1,5 @@
-/* Ego Mafia Stats — leaderboard, summary, player detail (static data.json) */
+/* Ego Mafia Stats — leaderboard, summary, player detail.
+ * Reads window.SCRIPT_URL when set (Cloud Function), else ./data.json. */
 
 let statsData = null;
 let currentSort = { key: 'rating', desc: true };
@@ -14,11 +15,54 @@ function showToast(msg) {
 	toast._timer = setTimeout(() => toast.classList.add('hidden'), 4000);
 }
 
+async function api(action, data = {}) {
+	const resp = await fetch(window.SCRIPT_URL, {
+		method: 'POST',
+		headers: { 'Content-Type': 'application/json' },
+		body: JSON.stringify({ action, ...data }),
+	});
+	const result = await resp.json();
+	if (result.error) throw new Error(result.error);
+	return result;
+}
+
+function buildHistoryMap(games) {
+	const history = {};
+	for (const g of games || []) {
+		for (const p of g.players || []) {
+			const entry = {
+				game_id: g.game_id,
+				alignment: p.alignment || (p.role === 'Mafia' ? 'Mafia' : 'Town'),
+				result: p.result,
+				rate_change: p.rate_change,
+			};
+			if (p.old_rating !== undefined) {
+				entry.old_rating = p.old_rating;
+				entry.new_rating = p.new_rating;
+			}
+			(history[p.player] = history[p.player] || []).push(entry);
+		}
+	}
+	return history;
+}
+
 async function loadStats() {
 	try {
-		const resp = await fetch('./data.json', { cache: 'no-cache' });
-		if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-		statsData = await resp.json();
+		if (window.SCRIPT_URL) {
+			const [stats, mh] = await Promise.all([
+				api('getStats'),
+				api('getMatchHistory'),
+			]);
+			statsData = {
+				players: stats.players,
+				game_summary: stats.game_summary,
+				history: buildHistoryMap(mh.games),
+			};
+		} else {
+			const resp = await fetch('./data.json', { cache: 'no-cache' });
+			if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+			statsData = await resp.json();
+		}
 		renderStatsSummary(statsData.game_summary);
 		renderLeaderboard(statsData.players);
 	} catch (e) {

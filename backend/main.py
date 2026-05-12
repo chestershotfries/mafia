@@ -14,8 +14,11 @@ import gspread
 from google.oauth2.service_account import Credentials
 from trueskill import TrueSkill, Rating
 
+import json_store
+
 # --- Constants ---
 
+STORAGE = os.environ.get("STORAGE", "sheets")  # "sheets" | "gcs_json"
 SHEET_ID = os.environ.get("SHEET_ID", "1vTc6XAa4beDM4n1syQ22Hs10JGVT9PuHNSoTmY051CQ")
 TRUESKILL_MU = 25
 TRUESKILL_SIGMA = 25 / 3
@@ -76,8 +79,34 @@ def get_gc():
     return _gc
 
 
+_json_ss = None
+
+
 def get_sheet():
+    """Return a spreadsheet handle. For STORAGE=gcs_json the JsonSpreadsheet
+    is cached for the duration of one request so multiple calls within a
+    handler see the same in-memory copy; the dispatcher resets it per
+    request."""
+    global _json_ss
+    if STORAGE == "gcs_json":
+        if _json_ss is None:
+            _json_ss = json_store.get_json_spreadsheet()
+        return _json_ss
     return get_gc().open_by_key(SHEET_ID)
+
+
+def _reset_storage_state():
+    global _json_ss
+    _json_ss = None
+
+
+def _flush_storage():
+    if STORAGE == "gcs_json" and _json_ss is not None:
+        _json_ss.flush()
+
+
+# gspread and json_store each raise their own WorksheetNotFound. Catch either uniformly.
+_WORKSHEET_NOT_FOUND = (gspread.exceptions.WorksheetNotFound, json_store.WorksheetNotFound)
 
 
 # --- Rating helpers ---
@@ -139,9 +168,12 @@ def compute_trueskill(mafia_players, town_players, mafia_won):
 
 def sort_stats_summary(ss):
     """Sort the Stats Summary sheet by Rating (column 12) descending."""
+    if STORAGE != "sheets":
+        # JSON store recomputes Stats Summary on read; nothing to sort/format.
+        return
     try:
         ws = ss.worksheet("Stats Summary")
-    except gspread.exceptions.WorksheetNotFound:
+    except _WORKSHEET_NOT_FOUND:
         return
     last_row = len(ws.get_all_values())
     if last_row > 1:
@@ -545,7 +577,7 @@ def record_game(body):
                         ]
                     }
                 )
-        except gspread.exceptions.WorksheetNotFound:
+        except _WORKSHEET_NOT_FOUND:
             pass
 
     # Sort Stats Summary
@@ -637,7 +669,7 @@ def undo_last_game():
             )
             for row_num in stats_rows_to_delete:
                 ws_stats.delete_rows(row_num)
-        except gspread.exceptions.WorksheetNotFound:
+        except _WORKSHEET_NOT_FOUND:
             pass
 
     # Sort Stats Summary
@@ -806,6 +838,7 @@ def main(request):
     if request.method == "OPTIONS":
         return make_response("", 204)
 
+    _reset_storage_state()
     try:
         body = request.get_json(silent=True) or json.loads(request.data or "{}")
         action = body.get("action")
@@ -829,6 +862,7 @@ def main(request):
         else:
             return make_response({"error": f"Unknown action: {action}"}, 400)
 
+        _flush_storage()
         return make_response(result)
 
     except Exception as e:
