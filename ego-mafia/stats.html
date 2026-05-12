@@ -6,13 +6,15 @@
   <title>Ego Mafia Stats</title>
   <link rel="stylesheet" href="../style.css">
   <link rel="stylesheet" href="../stats.css">
-  <link rel="stylesheet" href="./ego.css">
 </head>
 <body>
   <div class="container">
     <div class="stats-header">
       <h1>Ego Mafia Stats</h1>
-      <a href="./index.html" class="btn btn-secondary">Matches</a>
+      <div class="nav-buttons">
+        <a href="./index.html" class="btn btn-secondary">Game</a>
+        <a href="./match-history.html" class="btn btn-secondary">Match History</a>
+      </div>
     </div>
 
     <div class="stats-cards">
@@ -76,6 +78,10 @@
     <div id="toast" class="toast hidden"></div>
   </div>
 
+  <script>
+    window.SCRIPT_URL = '';
+    window.SITE_NAME = 'Ego Mafia';
+  </script>
   <script src="./stats.js"></script>
 </body>
 </html>

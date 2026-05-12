@@ -1,4 +1,8 @@
-/* Ego Mafia — match history page */
+/* Mafia Match History — fetches from Cloud Function getMatchHistory action */
+
+const SCRIPT_URL = (typeof window !== 'undefined' && window.SCRIPT_URL !== undefined)
+	? window.SCRIPT_URL
+	: 'https://us-central1-mafia-tracker-310960.cloudfunctions.net/mafia-backend';
 
 const $ = (sel) => document.querySelector(sel);
 
@@ -10,22 +14,25 @@ function showToast(msg) {
 	toast._timer = setTimeout(() => toast.classList.add('hidden'), 4000);
 }
 
-async function loadData() {
-	try {
-		const resp = await fetch('./data.json', { cache: 'no-cache' });
-		if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-		const data = await resp.json();
-		renderSummary(data.game_summary);
-		renderGames(data.games);
-	} catch (e) {
-		showToast('Failed to load data: ' + e.message);
-	}
+async function api(action, data = {}) {
+	if (!SCRIPT_URL) throw new Error('Backend not configured for this site');
+	const resp = await fetch(SCRIPT_URL, {
+		method: 'POST',
+		headers: { 'Content-Type': 'application/json' },
+		body: JSON.stringify({ action, ...data }),
+	});
+	const result = await resp.json();
+	if (result.error) throw new Error(result.error);
+	return result;
 }
 
-function renderSummary(s) {
-	$('#stat-total-games').textContent = s.total_games;
-	$('#stat-mafia-pct').textContent = s.mafia_win_pct + '%';
-	$('#stat-town-pct').textContent = s.town_win_pct + '%';
+async function loadGames() {
+	try {
+		const data = await api('getMatchHistory');
+		renderGames(data.games || []);
+	} catch (e) {
+		showToast('Failed to load match history: ' + e.message);
+	}
 }
 
 function renderGames(games) {
@@ -41,35 +48,31 @@ function renderGames(games) {
 		const card = document.createElement('div');
 		card.className = 'game-card';
 
-		const winnerClass = g.winner.toLowerCase() === 'mafia' ? 'mafia' : 'town';
+		const winner = (g.winner || '').toLowerCase();
+		const winnerClass = winner === 'mafia' ? 'mafia' : 'town';
+		const winnerLabel = g.winner ? `${escapeHtml(g.winner)} Win` : '—';
+
 		const mafiaPills = g.mafia
 			.map((n) => `<span class="player-pill mafia">${escapeHtml(n)}</span>`)
 			.join(' ');
 		const townPills = g.town
-			.map((t) => {
-				const roleTag = t.role !== 'Town'
-					? `<span class="role">${escapeHtml(t.role)}</span>`
-					: '';
-				return `<span class="player-pill town">${escapeHtml(t.name)}${roleTag}</span>`;
-			})
+			.map((t) => `<span class="player-pill town">${escapeHtml(t.name)}</span>`)
 			.join(' ');
 
 		let extra = '';
-		if (g.n0.length) {
+		if (g.n0 && g.n0.length) {
 			const pills = g.n0.map((n) => `<span class="player-pill">${escapeHtml(n)}</span>`).join(' ');
 			extra += `<div class="game-card-row"><span class="game-card-label">N0</span>${pills}</div>`;
 		}
-		if (g.ghosts.length) {
-			const pills = g.ghosts
-				.map((n) => `<span class="player-pill">${escapeHtml(n)}</span>`)
-				.join(' ');
+		if (g.ghosts && g.ghosts.length) {
+			const pills = g.ghosts.map((n) => `<span class="player-pill">${escapeHtml(n)}</span>`).join(' ');
 			extra += `<div class="game-card-row"><span class="game-card-label">Ghosts</span>${pills}</div>`;
 		}
 
 		card.innerHTML = `
 			<div class="game-card-header">
 				<span class="game-card-id">Game ${g.game_id}</span>
-				<span class="game-card-winner ${winnerClass}">${escapeHtml(g.winner)} Win</span>
+				<span class="game-card-winner ${winnerClass}">${winnerLabel}</span>
 			</div>
 			<div class="game-card-row"><span class="game-card-label">Mafia</span>${mafiaPills}</div>
 			<div class="game-card-row"><span class="game-card-label">Town</span>${townPills}</div>
@@ -89,4 +92,4 @@ function escapeHtml(s) {
 	}[c]));
 }
 
-document.addEventListener('DOMContentLoaded', loadData);
+document.addEventListener('DOMContentLoaded', loadGames);

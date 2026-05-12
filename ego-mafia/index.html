@@ -3,41 +3,197 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Ego Mafia</title>
+  <title>Ego Mafia Randomizer</title>
   <link rel="stylesheet" href="../style.css">
-  <link rel="stylesheet" href="../stats.css">
-  <link rel="stylesheet" href="./ego.css">
 </head>
 <body>
   <div class="container">
-    <div class="stats-header">
-      <h1>Ego Mafia</h1>
-      <a href="./stats.html" class="btn btn-secondary">Stats</a>
-    </div>
-
-    <div class="stats-cards">
-      <div class="stat-card">
-        <span class="stat-value" id="stat-total-games">--</span>
-        <span class="stat-label">Games</span>
-      </div>
-      <div class="stat-card">
-        <span class="stat-value mafia" id="stat-mafia-pct">--</span>
-        <span class="stat-label">Mafia Win %</span>
-      </div>
-      <div class="stat-card">
-        <span class="stat-value town" id="stat-town-pct">--</span>
-        <span class="stat-label">Town Win %</span>
+    <div class="header-row">
+      <h1>Ego Mafia Game Randomizer</h1>
+      <div class="nav-buttons">
+        <a href="./stats.html" class="btn btn-secondary">Stats</a>
+        <a href="./match-history.html" class="btn btn-secondary">Match History</a>
       </div>
     </div>
 
-    <section class="panel">
-      <h2>Match History</h2>
-      <div id="games-list" class="games-list"></div>
+    <!-- Panel 1: Name Entry & Randomization -->
+    <section id="panel-randomize" class="panel active">
+      <h2>Enter Players</h2>
+      <textarea id="names-input" placeholder="Enter 13-15 names, one per line or comma-separated"
+                rows="8"></textarea>
+      <p id="name-counter" class="counter">0/15 names</p>
+      <div class="button-row">
+        <button id="btn-randomize" class="btn btn-primary">Randomize</button>
+        <button id="btn-manual" class="btn btn-secondary">Manual Setup</button>
+        <button id="btn-retro" class="btn btn-secondary">Log Past Game</button>
+        <button id="btn-darkstars" class="btn btn-secondary btn-ds">Dark Stars</button>
+        <input id="dice-max" type="number" class="dice-input" value="20" min="2">
+        <button id="btn-dice" class="btn btn-secondary btn-sm">Roll</button>
+        <span id="dice-result" class="d100-result"></span>
+      </div>
+
+      <div id="assignments-display" class="hidden">
+        <h3>Assignments <span id="roll-count" class="roll-count"></span></h3>
+        <ol id="assignments-list" class="assignments-list"></ol>
+        <h3>RNG Formals</h3>
+        <div id="formals-schedule" class="formals-grid"></div>
+        <div class="button-row">
+          <button id="btn-reroll" class="btn btn-secondary">Re-randomize</button>
+          <button id="btn-accept" class="btn btn-primary">Accept &amp; Play</button>
+        </div>
+      </div>
+
+      <div id="manual-setup" class="hidden">
+        <h3>Assign Roles</h3>
+        <p class="hint">Click role buttons to cycle: Town → Mafia → Cop → Medic → Vigi. Click names to edit.</p>
+        <p id="mafia-counter" class="counter">0/3 Mafia · 0/1 Cop · 0/1 Medic · 0/1 Vigi</p>
+        <div id="manual-player-list" class="manual-player-grid"></div>
+        <div class="button-row">
+          <button id="btn-manual-cancel" class="btn btn-secondary">Cancel</button>
+          <button id="btn-manual-accept" class="btn btn-primary" disabled>Accept &amp; Play</button>
+        </div>
+      </div>
+
+      <div id="retro-form" class="hidden">
+        <h3>Log Past Game</h3>
+        <p class="hint">Click role buttons to cycle: Town → Mafia → Cop → Medic → Vigi. Click names to edit.</p>
+        <p id="retro-mafia-counter" class="counter">0/3 Mafia · 0/1 Cop · 0/1 Medic · 0/1 Vigi</p>
+        <div id="retro-player-list" class="manual-player-grid"></div>
+
+        <div class="form-group">
+          <label class="form-label">Choose a Winner:</label>
+          <div class="radio-group winner-group">
+            <label><input type="radio" name="retro-winner" value="Mafia"> Mafia Win</label>
+            <label><input type="radio" name="retro-winner" value="Town"> Town Win</label>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Night 0 Kills:</label>
+          <div id="retro-n0-checks" class="checkbox-group n0-kill-group"></div>
+        </div>
+
+        <p id="retro-rated-preview" class="counter"></p>
+
+        <div class="button-row">
+          <button id="btn-retro-cancel" class="btn btn-secondary">Cancel</button>
+          <button id="btn-retro-submit" class="btn btn-primary" disabled>Submit Game</button>
+        </div>
+      </div>
+
+      <div id="darkstars-setup" class="hidden">
+        <h3>Dark Stars Setup</h3>
+        <p class="hint">15-16 players. Setup is randomly assigned. Not recorded for stats.</p>
+        <div id="darkstars-setup-info" class="darkstars-info"></div>
+        <div id="darkstars-player-list" class="manual-player-grid"></div>
+        <div class="button-row">
+          <button id="btn-darkstars-cancel" class="btn btn-secondary">Cancel</button>
+          <button id="btn-darkstars-reroll" class="btn btn-secondary">Reroll Setup</button>
+          <button id="btn-darkstars-accept" class="btn btn-primary">Accept &amp; Play</button>
+        </div>
+      </div>
     </section>
 
+    <!-- Panel 2: Game Panel -->
+    <section id="panel-game" class="panel hidden">
+      <h2>Game Panel</h2>
+
+      <div class="discord-block">
+        <div class="discord-header">
+          <span>Role Reveal</span>
+          <button class="btn-copy" data-target="role-reveal-pre">Copy</button>
+        </div>
+        <pre id="role-reveal-pre" class="discord-pre"></pre>
+      </div>
+
+      <div id="nights-container"></div>
+
+      <div id="night-buttons" class="night-buttons"></div>
+      <div id="win-indicator" class="win-indicator hidden"></div>
+      <div class="button-row">
+        <button id="btn-new-game-2" class="btn btn-secondary">New Game</button>
+        <button id="btn-continue-record" class="btn btn-primary">Continue to Record</button>
+      </div>
+    </section>
+
+    <!-- Panel 3: Record Results -->
+    <section id="panel-record" class="panel hidden">
+      <h2>Record Results</h2>
+      <div id="locked-assignments">
+        <h3>Game Assignments</h3>
+        <p class="hint">Click a name to edit it</p>
+        <ol id="locked-list" class="assignments-list"></ol>
+        <h3>RNG Formals</h3>
+        <div id="locked-formals" class="formals-grid"></div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Choose a Winner:</label>
+        <div class="radio-group winner-group">
+          <label><input type="radio" name="winner" value="Mafia"> Mafia Win</label>
+          <label><input type="radio" name="winner" value="Town"> Town Win</label>
+        </div>
+      </div>
+
+      <div id="night0-section" class="form-group">
+        <label class="form-label">Night 0 Kills:</label>
+        <div id="night0-checks" class="checkbox-group n0-kill-group"></div>
+      </div>
+
+      <p id="rated-preview" class="counter"></p>
+
+      <div class="button-row">
+        <button id="btn-new-game-3" class="btn btn-secondary">New Game</button>
+        <button id="btn-back" class="btn btn-secondary">Back</button>
+        <button id="btn-submit" class="btn btn-primary" disabled>Submit Results</button>
+      </div>
+    </section>
+
+    <!-- Panel 4: Results & Verification -->
+    <section id="panel-results" class="panel hidden">
+      <h2>Rating Changes</h2>
+      <table id="results-table" class="results-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Player</th>
+            <th>Alignment</th>
+            <th>Result</th>
+            <th>Old Rating</th>
+            <th>New Rating</th>
+            <th>Change</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+
+      <div id="roles-summary" class="roles-summary"></div>
+
+      <div id="excluded-summary" class="excluded-summary"></div>
+
+      <div class="button-row">
+        <button id="btn-new-game" class="btn btn-primary">New Game</button>
+      </div>
+    </section>
+
+    <!-- Persistent: Last Game -->
+    <section id="last-game-section" class="last-game">
+      <h2>Last Recorded Game</h2>
+      <div id="last-game-content">Loading...</div>
+      <button id="btn-undo-last" class="btn btn-secondary hidden">Undo Last Game</button>
+    </section>
+
+    <!-- Toast -->
     <div id="toast" class="toast hidden"></div>
   </div>
 
-  <script src="./app.js"></script>
+  <script>
+    // Ego Mafia backend config. Set SCRIPT_URL to the deployed Cloud Function
+    // for the ego-mafia Google Sheet. Until then, submit/load actions will
+    // surface a "Backend not configured" toast.
+    window.SCRIPT_URL = '';
+    window.SITE_NAME = 'Ego Mafia';
+  </script>
+  <script src="../app.js"></script>
 </body>
 </html>

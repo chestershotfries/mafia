@@ -76,8 +76,25 @@
   color: #b8d8f2;
 }
 
+.player-pill.cop {
+  border-color: #d4a843;
+  color: #e9c97a;
+}
+
+.player-pill.medic {
+  border-color: #5fa863;
+  color: #a0d3a4;
+}
+
+.player-pill.vigi {
+  border-color: #d97a50;
+  color: #ecb497;
+}
+
 .player-pill .role {
   color: var(--text-muted);
   font-size: 0.75rem;
   margin-left: 0.25rem;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
 }

@@ -1,3 +1,5 @@
 trueskill
 openpyxl
 scipy
+gspread
+google-auth

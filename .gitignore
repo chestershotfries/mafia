@@ -1,3 +1,4 @@
 .DS_Store
 *.backup_*.xlsx
 service-account.json
+__pycache__/
