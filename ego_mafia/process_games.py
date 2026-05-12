@@ -24,12 +24,12 @@ SITE_DATA = HERE.parent / "ego-mafia" / "data.json"
 
 TRUESKILL_MU = 25
 TRUESKILL_SIGMA = 25 / 3
-MAFIA_GHOST_MU = 25.7
+MAFIA_GHOST_MU = 24.96
 MAFIA_GHOST_SIGMA = 0.8
-TOWN_GHOST_MU = 23.85
+TOWN_GHOST_MU = 24.59
 TOWN_GHOST_SIGMA = 0.8
 
-env = TrueSkill(tau=0.1, beta=5.5, draw_probability=0.0)
+env = TrueSkill(tau=0.1, beta=5.0, draw_probability=0.0)
 
 
 def display_rating(mu, sigma):

@@ -2,9 +2,9 @@
   "players": [
     {
       "name": "Chester",
-      "mu": 27.201364914821056,
-      "sigma": 8.195484338342377,
-      "rating": 1014,
+      "mu": 27.258298942953186,
+      "sigma": 8.181582751422322,
+      "rating": 1019,
       "town_games": 1,
       "town_wins": 1,
       "town_win_pct": 100.0,
@@ -17,9 +17,9 @@
     },
     {
       "name": "Motr",
-      "mu": 27.201364914821063,
-      "sigma": 8.195484338342377,
-      "rating": 1014,
+      "mu": 27.258298942953186,
+      "sigma": 8.181582751422322,
+      "rating": 1019,
       "town_games": 1,
       "town_wins": 1,
       "town_win_pct": 100.0,
@@ -32,9 +32,9 @@
     },
     {
       "name": "Coffee",
-      "mu": 26.43032996689729,
-      "sigma": 8.2543528944042,
-      "rating": 955,
+      "mu": 26.216444882049903,
+      "sigma": 8.253863000563229,
+      "rating": 941,
       "town_games": 1,
       "town_wins": 1,
       "town_win_pct": 100.0,
@@ -47,9 +47,9 @@
     },
     {
       "name": "Strik3r",
-      "mu": 26.430329966897293,
-      "sigma": 8.2543528944042,
-      "rating": 955,
+      "mu": 26.216444882049903,
+      "sigma": 8.253863000563229,
+      "rating": 941,
       "town_games": 1,
       "town_wins": 1,
       "town_win_pct": 100.0,
@@ -62,9 +62,9 @@
     },
     {
       "name": "Heck",
-      "mu": 25.61784565374338,
-      "sigma": 8.195484338342377,
-      "rating": 906,
+      "mu": 25.131338821742755,
+      "sigma": 8.181582751422322,
+      "rating": 874,
       "town_games": 2,
       "town_wins": 1,
       "town_win_pct": 50.0,
@@ -77,9 +77,9 @@
     },
     {
       "name": "Chipper",
-      "mu": 25.617845653743377,
-      "sigma": 8.195484338342377,
-      "rating": 906,
+      "mu": 25.131338821742755,
+      "sigma": 8.181582751422322,
+      "rating": 874,
       "town_games": 2,
       "town_wins": 1,
       "town_win_pct": 50.0,
@@ -92,9 +92,9 @@
     },
     {
       "name": "Lofty",
-      "mu": 25.61784565374338,
-      "sigma": 8.195484338342377,
-      "rating": 906,
+      "mu": 25.131338821742755,
+      "sigma": 8.181582751422322,
+      "rating": 874,
       "town_games": 2,
       "town_wins": 1,
       "town_win_pct": 50.0,
@@ -107,9 +107,9 @@
     },
     {
       "name": "Rocker",
-      "mu": 25.617845653743377,
-      "sigma": 8.195484338342377,
-      "rating": 906,
+      "mu": 25.131338821742755,
+      "sigma": 8.181582751422322,
+      "rating": 874,
       "town_games": 2,
       "town_wins": 1,
       "town_win_pct": 50.0,
@@ -122,9 +122,9 @@
     },
     {
       "name": "Cyclone",
-      "mu": 25.617845653743377,
-      "sigma": 8.195484338342377,
-      "rating": 906,
+      "mu": 25.131338821742755,
+      "sigma": 8.181582751422322,
+      "rating": 874,
       "town_games": 2,
       "town_wins": 1,
       "town_win_pct": 50.0,
@@ -137,9 +137,9 @@
     },
     {
       "name": "Machop",
-      "mu": 25.61784565374338,
-      "sigma": 8.195484338342377,
-      "rating": 906,
+      "mu": 25.131338821742755,
+      "sigma": 8.181582751422322,
+      "rating": 874,
       "town_games": 2,
       "town_wins": 1,
       "town_win_pct": 50.0,
@@ -152,9 +152,9 @@
     },
     {
       "name": "Decode",
-      "mu": 24.382154346256627,
-      "sigma": 8.195484338342377,
-      "rating": 822,
+      "mu": 24.86866117825723,
+      "sigma": 8.181582751422322,
+      "rating": 857,
       "town_games": 0,
       "town_wins": 0,
       "town_win_pct": 0,
@@ -167,9 +167,9 @@
     },
     {
       "name": "Jonas",
-      "mu": 24.20824036946116,
-      "sigma": 8.272731611951896,
-      "rating": 802,
+      "mu": 23.936519939394774,
+      "sigma": 8.258915237453891,
+      "rating": 785,
       "town_games": 1,
       "town_wins": 0,
       "town_win_pct": 0.0,
@@ -182,9 +182,9 @@
     },
     {
       "name": "Ken",
-      "mu": 24.20824036946116,
-      "sigma": 8.272731611951896,
-      "rating": 802,
+      "mu": 23.936519939394774,
+      "sigma": 8.258915237453891,
+      "rating": 785,
       "town_games": 1,
       "town_wins": 0,
       "town_win_pct": 0.0,
@@ -197,9 +197,9 @@
     },
     {
       "name": "Double A",
-      "mu": 22.798635085178944,
-      "sigma": 8.195484338342377,
-      "rating": 714,
+      "mu": 22.741701057046797,
+      "sigma": 8.181582751422322,
+      "rating": 712,
       "town_games": 1,
       "town_wins": 0,
       "town_win_pct": 0.0,
@@ -212,9 +212,9 @@
     },
     {
       "name": "Keegan",
-      "mu": 22.798635085178944,
-      "sigma": 8.195484338342377,
-      "rating": 714,
+      "mu": 22.741701057046797,
+      "sigma": 8.181582751422322,
+      "rating": 712,
       "town_games": 1,
       "town_wins": 0,
       "town_win_pct": 0.0,
@@ -239,9 +239,9 @@
         "game_id": 2,
         "alignment": "Town",
         "result": "Win",
-        "rate_change": 105,
+        "rate_change": 91,
         "old_rating": 850,
-        "new_rating": 955
+        "new_rating": 941
       }
     ],
     "Heck": [
@@ -249,17 +249,17 @@
         "game_id": 2,
         "alignment": "Town",
         "result": "Win",
-        "rate_change": 104,
-        "old_rating": 802,
-        "new_rating": 906
+        "rate_change": 89,
+        "old_rating": 785,
+        "new_rating": 874
       },
       {
         "game_id": 1,
         "alignment": "Town",
         "result": "Loss",
-        "rate_change": -48,
+        "rate_change": -65,
         "old_rating": 850,
-        "new_rating": 802
+        "new_rating": 785
       }
     ],
     "Lofty": [
@@ -267,17 +267,17 @@
         "game_id": 2,
         "alignment": "Town",
         "result": "Win",
-        "rate_change": 104,
-        "old_rating": 802,
-        "new_rating": 906
+        "rate_change": 89,
+        "old_rating": 785,
+        "new_rating": 874
       },
       {
         "game_id": 1,
         "alignment": "Town",
         "result": "Loss",
-        "rate_change": -48,
+        "rate_change": -65,
         "old_rating": 850,
-        "new_rating": 802
+        "new_rating": 785
       }
     ],
     "Machop": [
@@ -285,17 +285,17 @@
         "game_id": 2,
         "alignment": "Town",
         "result": "Win",
-        "rate_change": 104,
-        "old_rating": 802,
-        "new_rating": 906
+        "rate_change": 89,
+        "old_rating": 785,
+        "new_rating": 874
       },
       {
         "game_id": 1,
         "alignment": "Town",
         "result": "Loss",
-        "rate_change": -48,
+        "rate_change": -65,
         "old_rating": 850,
-        "new_rating": 802
+        "new_rating": 785
       }
     ],
     "Chipper": [
@@ -303,17 +303,17 @@
         "game_id": 2,
         "alignment": "Town",
         "result": "Win",
-        "rate_change": 104,
-        "old_rating": 802,
-        "new_rating": 906
+        "rate_change": 89,
+        "old_rating": 785,
+        "new_rating": 874
       },
       {
         "game_id": 1,
         "alignment": "Town",
         "result": "Loss",
-        "rate_change": -48,
+        "rate_change": -65,
         "old_rating": 850,
-        "new_rating": 802
+        "new_rating": 785
       }
     ],
     "Rocker": [
@@ -321,17 +321,17 @@
         "game_id": 2,
         "alignment": "Town",
         "result": "Win",
-        "rate_change": 104,
-        "old_rating": 802,
-        "new_rating": 906
+        "rate_change": 89,
+        "old_rating": 785,
+        "new_rating": 874
       },
       {
         "game_id": 1,
         "alignment": "Town",
         "result": "Loss",
-        "rate_change": -48,
+        "rate_change": -65,
         "old_rating": 850,
-        "new_rating": 802
+        "new_rating": 785
       }
     ],
     "Chester": [
@@ -339,17 +339,17 @@
         "game_id": 2,
         "alignment": "Town",
         "result": "Win",
-        "rate_change": 104,
-        "old_rating": 910,
-        "new_rating": 1014
+        "rate_change": 89,
+        "old_rating": 930,
+        "new_rating": 1019
       },
       {
         "game_id": 1,
         "alignment": "Mafia",
         "result": "Win",
-        "rate_change": 60,
+        "rate_change": 80,
         "old_rating": 850,
-        "new_rating": 910
+        "new_rating": 930
       }
     ],
     "Coffee": [
@@ -357,9 +357,9 @@
         "game_id": 2,
         "alignment": "Town",
         "result": "Win",
-        "rate_change": 105,
+        "rate_change": 91,
         "old_rating": 850,
-        "new_rating": 955
+        "new_rating": 941
       }
     ],
     "Motr": [
@@ -367,17 +367,17 @@
         "game_id": 2,
         "alignment": "Town",
         "result": "Win",
-        "rate_change": 104,
-        "old_rating": 910,
-        "new_rating": 1014
+        "rate_change": 89,
+        "old_rating": 930,
+        "new_rating": 1019
       },
       {
         "game_id": 1,
         "alignment": "Mafia",
         "result": "Win",
-        "rate_change": 60,
+        "rate_change": 80,
         "old_rating": 850,
-        "new_rating": 910
+        "new_rating": 930
       }
     ],
     "Cyclone": [
@@ -385,17 +385,17 @@
         "game_id": 2,
         "alignment": "Town",
         "result": "Win",
-        "rate_change": 104,
-        "old_rating": 802,
-        "new_rating": 906
+        "rate_change": 89,
+        "old_rating": 785,
+        "new_rating": 874
       },
       {
         "game_id": 1,
         "alignment": "Town",
         "result": "Loss",
-        "rate_change": -48,
+        "rate_change": -65,
         "old_rating": 850,
-        "new_rating": 802
+        "new_rating": 785
       }
     ],
     "Keegan": [
@@ -403,17 +403,17 @@
         "game_id": 2,
         "alignment": "Mafia",
         "result": "Loss",
-        "rate_change": -88,
-        "old_rating": 802,
-        "new_rating": 714
+        "rate_change": -73,
+        "old_rating": 785,
+        "new_rating": 712
       },
       {
         "game_id": 1,
         "alignment": "Town",
         "result": "Loss",
-        "rate_change": -48,
+        "rate_change": -65,
         "old_rating": 850,
-        "new_rating": 802
+        "new_rating": 785
       }
     ],
     "Decode": [
@@ -421,17 +421,17 @@
         "game_id": 2,
         "alignment": "Mafia",
         "result": "Loss",
-        "rate_change": -88,
-        "old_rating": 910,
-        "new_rating": 822
+        "rate_change": -73,
+        "old_rating": 930,
+        "new_rating": 857
       },
       {
         "game_id": 1,
         "alignment": "Mafia",
         "result": "Win",
-        "rate_change": 60,
+        "rate_change": 80,
         "old_rating": 850,
-        "new_rating": 910
+        "new_rating": 930
       }
     ],
     "Double A": [
@@ -439,17 +439,17 @@
         "game_id": 2,
         "alignment": "Mafia",
         "result": "Loss",
-        "rate_change": -88,
-        "old_rating": 802,
-        "new_rating": 714
+        "rate_change": -73,
+        "old_rating": 785,
+        "new_rating": 712
       },
       {
         "game_id": 1,
         "alignment": "Town",
         "result": "Loss",
-        "rate_change": -48,
+        "rate_change": -65,
         "old_rating": 850,
-        "new_rating": 802
+        "new_rating": 785
       }
     ],
     "Ken": [
@@ -457,9 +457,9 @@
         "game_id": 1,
         "alignment": "Town",
         "result": "Loss",
-        "rate_change": -48,
+        "rate_change": -65,
         "old_rating": 850,
-        "new_rating": 802
+        "new_rating": 785
       }
     ],
     "Jonas": [
@@ -467,9 +467,9 @@
         "game_id": 1,
         "alignment": "Town",
         "result": "Loss",
-        "rate_change": -48,
+        "rate_change": -65,
         "old_rating": 850,
-        "new_rating": 802
+        "new_rating": 785
       }
     ]
   },
@@ -483,77 +483,77 @@
           "role": "Mafia",
           "alignment": "Mafia",
           "result": "Loss",
-          "rate_change": -88,
-          "old_mu": 24.20824036946116,
-          "new_mu": 22.798635085178944,
-          "new_sigma": 8.195484338342377,
-          "old_rating": 802,
-          "new_rating": 714,
-          "old_sigma": 8.272731611951896
+          "rate_change": -73,
+          "old_mu": 23.936519939394774,
+          "new_mu": 22.741701057046797,
+          "new_sigma": 8.181582751422322,
+          "old_rating": 785,
+          "new_rating": 712,
+          "old_sigma": 8.258915237453891
         },
         {
           "player": "Decode",
           "role": "Mafia",
           "alignment": "Mafia",
           "result": "Loss",
-          "rate_change": -88,
-          "old_mu": 25.79175963053884,
-          "new_mu": 24.382154346256627,
-          "new_sigma": 8.195484338342377,
-          "old_rating": 910,
-          "new_rating": 822,
-          "old_sigma": 8.272731611951896
+          "rate_change": -73,
+          "old_mu": 26.063480060605208,
+          "new_mu": 24.86866117825723,
+          "new_sigma": 8.181582751422322,
+          "old_rating": 930,
+          "new_rating": 857,
+          "old_sigma": 8.258915237453891
         },
         {
           "player": "Keegan",
           "role": "Mafia",
           "alignment": "Mafia",
           "result": "Loss",
-          "rate_change": -88,
-          "old_mu": 24.20824036946116,
-          "new_mu": 22.798635085178944,
-          "new_sigma": 8.195484338342377,
-          "old_rating": 802,
-          "new_rating": 714,
-          "old_sigma": 8.272731611951896
+          "rate_change": -73,
+          "old_mu": 23.936519939394774,
+          "new_mu": 22.741701057046797,
+          "new_sigma": 8.181582751422322,
+          "old_rating": 785,
+          "new_rating": 712,
+          "old_sigma": 8.258915237453891
         },
         {
           "player": "Cyclone",
           "role": "Cop",
           "alignment": "Town",
           "result": "Win",
-          "rate_change": 104,
-          "old_mu": 24.20824036946116,
-          "new_mu": 25.617845653743377,
-          "new_sigma": 8.195484338342377,
-          "old_rating": 802,
-          "new_rating": 906,
-          "old_sigma": 8.272731611951896
+          "rate_change": 89,
+          "old_mu": 23.936519939394774,
+          "new_mu": 25.131338821742755,
+          "new_sigma": 8.181582751422322,
+          "old_rating": 785,
+          "new_rating": 874,
+          "old_sigma": 8.258915237453891
         },
         {
           "player": "Motr",
           "role": "Medic",
           "alignment": "Town",
           "result": "Win",
-          "rate_change": 104,
-          "old_mu": 25.79175963053884,
-          "new_mu": 27.201364914821063,
-          "new_sigma": 8.195484338342377,
-          "old_rating": 910,
-          "new_rating": 1014,
-          "old_sigma": 8.272731611951896
+          "rate_change": 89,
+          "old_mu": 26.063480060605208,
+          "new_mu": 27.258298942953186,
+          "new_sigma": 8.181582751422322,
+          "old_rating": 930,
+          "new_rating": 1019,
+          "old_sigma": 8.258915237453891
         },
         {
           "player": "Coffee",
           "role": "Vigilante",
           "alignment": "Town",
           "result": "Win",
-          "rate_change": 105,
+          "rate_change": 91,
           "old_mu": 25.0,
-          "new_mu": 26.43032996689729,
-          "new_sigma": 8.2543528944042,
+          "new_mu": 26.216444882049903,
+          "new_sigma": 8.253863000563229,
           "old_rating": 850,
-          "new_rating": 955,
+          "new_rating": 941,
           "old_sigma": 8.333333333333334
         },
         {
@@ -561,90 +561,90 @@
           "role": "Town",
           "alignment": "Town",
           "result": "Win",
-          "rate_change": 104,
-          "old_mu": 25.79175963053884,
-          "new_mu": 27.201364914821056,
-          "new_sigma": 8.195484338342377,
-          "old_rating": 910,
-          "new_rating": 1014,
-          "old_sigma": 8.272731611951896
+          "rate_change": 89,
+          "old_mu": 26.063480060605208,
+          "new_mu": 27.258298942953186,
+          "new_sigma": 8.181582751422322,
+          "old_rating": 930,
+          "new_rating": 1019,
+          "old_sigma": 8.258915237453891
         },
         {
           "player": "Rocker",
           "role": "Town",
           "alignment": "Town",
           "result": "Win",
-          "rate_change": 104,
-          "old_mu": 24.20824036946116,
-          "new_mu": 25.617845653743377,
-          "new_sigma": 8.195484338342377,
-          "old_rating": 802,
-          "new_rating": 906,
-          "old_sigma": 8.272731611951896
+          "rate_change": 89,
+          "old_mu": 23.936519939394774,
+          "new_mu": 25.131338821742755,
+          "new_sigma": 8.181582751422322,
+          "old_rating": 785,
+          "new_rating": 874,
+          "old_sigma": 8.258915237453891
         },
         {
           "player": "Chipper",
           "role": "Town",
           "alignment": "Town",
           "result": "Win",
-          "rate_change": 104,
-          "old_mu": 24.20824036946116,
-          "new_mu": 25.617845653743377,
-          "new_sigma": 8.195484338342377,
-          "old_rating": 802,
-          "new_rating": 906,
-          "old_sigma": 8.272731611951896
+          "rate_change": 89,
+          "old_mu": 23.936519939394774,
+          "new_mu": 25.131338821742755,
+          "new_sigma": 8.181582751422322,
+          "old_rating": 785,
+          "new_rating": 874,
+          "old_sigma": 8.258915237453891
         },
         {
           "player": "Machop",
           "role": "Town",
           "alignment": "Town",
           "result": "Win",
-          "rate_change": 104,
-          "old_mu": 24.20824036946116,
-          "new_mu": 25.61784565374338,
-          "new_sigma": 8.195484338342377,
-          "old_rating": 802,
-          "new_rating": 906,
-          "old_sigma": 8.272731611951896
+          "rate_change": 89,
+          "old_mu": 23.936519939394774,
+          "new_mu": 25.131338821742755,
+          "new_sigma": 8.181582751422322,
+          "old_rating": 785,
+          "new_rating": 874,
+          "old_sigma": 8.258915237453891
         },
         {
           "player": "Lofty",
           "role": "Town",
           "alignment": "Town",
           "result": "Win",
-          "rate_change": 104,
-          "old_mu": 24.20824036946116,
-          "new_mu": 25.61784565374338,
-          "new_sigma": 8.195484338342377,
-          "old_rating": 802,
-          "new_rating": 906,
-          "old_sigma": 8.272731611951896
+          "rate_change": 89,
+          "old_mu": 23.936519939394774,
+          "new_mu": 25.131338821742755,
+          "new_sigma": 8.181582751422322,
+          "old_rating": 785,
+          "new_rating": 874,
+          "old_sigma": 8.258915237453891
         },
         {
           "player": "Heck",
           "role": "Town",
           "alignment": "Town",
           "result": "Win",
-          "rate_change": 104,
-          "old_mu": 24.20824036946116,
-          "new_mu": 25.61784565374338,
-          "new_sigma": 8.195484338342377,
-          "old_rating": 802,
-          "new_rating": 906,
-          "old_sigma": 8.272731611951896
+          "rate_change": 89,
+          "old_mu": 23.936519939394774,
+          "new_mu": 25.131338821742755,
+          "new_sigma": 8.181582751422322,
+          "old_rating": 785,
+          "new_rating": 874,
+          "old_sigma": 8.258915237453891
         },
         {
           "player": "Strik3r",
           "role": "Town",
           "alignment": "Town",
           "result": "Win",
-          "rate_change": 105,
+          "rate_change": 91,
           "old_mu": 25.0,
-          "new_mu": 26.430329966897293,
-          "new_sigma": 8.2543528944042,
+          "new_mu": 26.216444882049903,
+          "new_sigma": 8.253863000563229,
           "old_rating": 850,
-          "new_rating": 955,
+          "new_rating": 941,
           "old_sigma": 8.333333333333334
         },
         {
@@ -672,12 +672,12 @@
           "role": "Mafia",
           "alignment": "Mafia",
           "result": "Win",
-          "rate_change": 60,
+          "rate_change": 80,
           "old_mu": 25.0,
-          "new_mu": 25.79175963053884,
-          "new_sigma": 8.272731611951896,
+          "new_mu": 26.063480060605208,
+          "new_sigma": 8.258915237453891,
           "old_rating": 850,
-          "new_rating": 910,
+          "new_rating": 930,
           "old_sigma": 8.333333333333334
         },
         {
@@ -685,12 +685,12 @@
           "role": "Mafia",
           "alignment": "Mafia",
           "result": "Win",
-          "rate_change": 60,
+          "rate_change": 80,
           "old_mu": 25.0,
-          "new_mu": 25.79175963053884,
-          "new_sigma": 8.272731611951896,
+          "new_mu": 26.063480060605208,
+          "new_sigma": 8.258915237453891,
           "old_rating": 850,
-          "new_rating": 910,
+          "new_rating": 930,
           "old_sigma": 8.333333333333334
         },
         {
@@ -698,12 +698,12 @@
           "role": "Mafia",
           "alignment": "Mafia",
           "result": "Win",
-          "rate_change": 60,
+          "rate_change": 80,
           "old_mu": 25.0,
-          "new_mu": 25.79175963053884,
-          "new_sigma": 8.272731611951896,
+          "new_mu": 26.063480060605208,
+          "new_sigma": 8.258915237453891,
           "old_rating": 850,
-          "new_rating": 910,
+          "new_rating": 930,
           "old_sigma": 8.333333333333334
         },
         {
@@ -711,12 +711,12 @@
           "role": "Cop",
           "alignment": "Town",
           "result": "Loss",
-          "rate_change": -48,
+          "rate_change": -65,
           "old_mu": 25.0,
-          "new_mu": 24.20824036946116,
-          "new_sigma": 8.272731611951896,
+          "new_mu": 23.936519939394774,
+          "new_sigma": 8.258915237453891,
           "old_rating": 850,
-          "new_rating": 802,
+          "new_rating": 785,
           "old_sigma": 8.333333333333334
         },
         {
@@ -724,12 +724,12 @@
           "role": "Medic",
           "alignment": "Town",
           "result": "Loss",
-          "rate_change": -48,
+          "rate_change": -65,
           "old_mu": 25.0,
-          "new_mu": 24.20824036946116,
-          "new_sigma": 8.272731611951896,
+          "new_mu": 23.936519939394774,
+          "new_sigma": 8.258915237453891,
           "old_rating": 850,
-          "new_rating": 802,
+          "new_rating": 785,
           "old_sigma": 8.333333333333334
         },
         {
@@ -737,12 +737,12 @@
           "role": "Vigilante",
           "alignment": "Town",
           "result": "Loss",
-          "rate_change": -48,
+          "rate_change": -65,
           "old_mu": 25.0,
-          "new_mu": 24.20824036946116,
-          "new_sigma": 8.272731611951896,
+          "new_mu": 23.936519939394774,
+          "new_sigma": 8.258915237453891,
           "old_rating": 850,
-          "new_rating": 802,
+          "new_rating": 785,
           "old_sigma": 8.333333333333334
         },
         {
@@ -750,12 +750,12 @@
           "role": "Town",
           "alignment": "Town",
           "result": "Loss",
-          "rate_change": -48,
+          "rate_change": -65,
           "old_mu": 25.0,
-          "new_mu": 24.20824036946116,
-          "new_sigma": 8.272731611951896,
+          "new_mu": 23.936519939394774,
+          "new_sigma": 8.258915237453891,
           "old_rating": 850,
-          "new_rating": 802,
+          "new_rating": 785,
           "old_sigma": 8.333333333333334
         },
         {
@@ -763,12 +763,12 @@
           "role": "Town",
           "alignment": "Town",
           "result": "Loss",
-          "rate_change": -48,
+          "rate_change": -65,
           "old_mu": 25.0,
-          "new_mu": 24.20824036946116,
-          "new_sigma": 8.272731611951896,
+          "new_mu": 23.936519939394774,
+          "new_sigma": 8.258915237453891,
           "old_rating": 850,
-          "new_rating": 802,
+          "new_rating": 785,
           "old_sigma": 8.333333333333334
         },
         {
@@ -776,12 +776,12 @@
           "role": "Town",
           "alignment": "Town",
           "result": "Loss",
-          "rate_change": -48,
+          "rate_change": -65,
           "old_mu": 25.0,
-          "new_mu": 24.20824036946116,
-          "new_sigma": 8.272731611951896,
+          "new_mu": 23.936519939394774,
+          "new_sigma": 8.258915237453891,
           "old_rating": 850,
-          "new_rating": 802,
+          "new_rating": 785,
           "old_sigma": 8.333333333333334
         },
         {
@@ -789,12 +789,12 @@
           "role": "Town",
           "alignment": "Town",
           "result": "Loss",
-          "rate_change": -48,
+          "rate_change": -65,
           "old_mu": 25.0,
-          "new_mu": 24.20824036946116,
-          "new_sigma": 8.272731611951896,
+          "new_mu": 23.936519939394774,
+          "new_sigma": 8.258915237453891,
           "old_rating": 850,
-          "new_rating": 802,
+          "new_rating": 785,
           "old_sigma": 8.333333333333334
         },
         {
@@ -802,12 +802,12 @@
           "role": "Town",
           "alignment": "Town",
           "result": "Loss",
-          "rate_change": -48,
+          "rate_change": -65,
           "old_mu": 25.0,
-          "new_mu": 24.20824036946116,
-          "new_sigma": 8.272731611951896,
+          "new_mu": 23.936519939394774,
+          "new_sigma": 8.258915237453891,
           "old_rating": 850,
-          "new_rating": 802,
+          "new_rating": 785,
           "old_sigma": 8.333333333333334
         },
         {
@@ -815,12 +815,12 @@
           "role": "Town",
           "alignment": "Town",
           "result": "Loss",
-          "rate_change": -48,
+          "rate_change": -65,
           "old_mu": 25.0,
-          "new_mu": 24.20824036946116,
-          "new_sigma": 8.272731611951896,
+          "new_mu": 23.936519939394774,
+          "new_sigma": 8.258915237453891,
           "old_rating": 850,
-          "new_rating": 802,
+          "new_rating": 785,
           "old_sigma": 8.333333333333334
         },
         {
@@ -828,12 +828,12 @@
           "role": "Town",
           "alignment": "Town",
           "result": "Loss",
-          "rate_change": -48,
+          "rate_change": -65,
           "old_mu": 25.0,
-          "new_mu": 24.20824036946116,
-          "new_sigma": 8.272731611951896,
+          "new_mu": 23.936519939394774,
+          "new_sigma": 8.258915237453891,
           "old_rating": 850,
-          "new_rating": 802,
+          "new_rating": 785,
           "old_sigma": 8.333333333333334
         },
         {
