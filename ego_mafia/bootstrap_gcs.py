@@ -139,7 +139,7 @@ def main():
     order, games, winners = load_games()
 
     ratings = {}                # name -> {mu, sigma}
-    history_rows_oldest = []    # oldest first; flipped on output
+    blocks_oldest_first = []    # one row block per game, oldest game first
 
     for gid in order:
         rows = games[gid]
@@ -171,16 +171,17 @@ def main():
 
         new_ratings = compute_trueskill(mafia_players, town_players, mafia_won)
 
+        block = []  # rows for this game in position-ascending order
         for s in sorted(slots, key=lambda x: x["position"]):
             name = s["name"]
             role = s["role"] or "Town"
             alignment = "Mafia" if role == "Mafia" else "Town"
             if s["ghost"]:
-                history_rows_oldest.append(
+                block.append(
                     [str(int(gid)), name, role, "Ghost", "0", "", "", "", "", "", ""]
                 )
             elif s["n0"]:
-                history_rows_oldest.append(
+                block.append(
                     [str(int(gid)), name, role, "Night Zero", "0", "", "", "", "", "", ""]
                 )
             elif name:
@@ -193,16 +194,19 @@ def main():
                     if mafia_won
                     else ("Loss" if alignment == "Mafia" else "Win")
                 )
-                history_rows_oldest.append([
+                block.append([
                     str(int(gid)), name, role, result_str,
                     str(new_rating - old_rating),
                     repr(old["mu"]), repr(nr["mu"]), repr(nr["sigma"]),
                     str(old_rating), str(new_rating), repr(old["sigma"]),
                 ])
                 ratings[name] = {"mu": nr["mu"], "sigma": nr["sigma"]}
+        blocks_oldest_first.append(block)
 
-    # MatchHistory: newest at row 2 (header at row 1).
-    history_tab = [HISTORY_HEADER] + list(reversed(history_rows_oldest))
+    # MatchHistory: newest game first, but position-ascending within each game.
+    history_tab = [HISTORY_HEADER]
+    for block in reversed(blocks_oldest_first):
+        history_tab.extend(block)
 
     # MatchRatings: alphabetical by name (the backend only looks names up by index,
     # so order doesn't matter functionally).
@@ -221,7 +225,7 @@ def main():
     print(
         f"Wrote gs://{bucket_name}/{object_name}: "
         f"{len(ratings)} players, {len(order)} games, "
-        f"{len(history_rows_oldest)} history rows."
+        f"{sum(len(b) for b in blocks_oldest_first)} history rows."
     )
 
 

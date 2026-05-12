@@ -17,7 +17,11 @@ function rankClass(r) {
 }
 
 function roleAlignmentClass(role) {
-	return role === 'Mafia' ? 'align-mafia' : 'align-town';
+	if (role === 'Mafia') return 'align-mafia';
+	if (role === 'Cop') return 'role-cop';
+	if (role === 'Medic') return 'role-medic';
+	if (role === 'Vigilante') return 'role-vig';
+	return 'align-town';
 }
 
 function showToast(msg) {

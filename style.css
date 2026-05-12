@@ -463,6 +463,18 @@ textarea:focus {
 	color: var(--town-blue);
 }
 
+.role-cop {
+	color: #d4a843;
+}
+
+.role-medic {
+	color: #5fa863;
+}
+
+.role-vig {
+	color: #d97a50;
+}
+
 .excluded-row {
 	opacity: 0.5;
 }
