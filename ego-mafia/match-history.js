@@ -1,34 +1,45 @@
-/* Ego Mafia — match history page */
+/* Ego Mafia Match History — last-game-style table per game (reads data.json) */
 
 const $ = (sel) => document.querySelector(sel);
 
+const MEDALS = { 1: '\u{1F947}', 2: '\u{1F948}', 3: '\u{1F949}' };
+
+function rankClass(r) {
+	if (r === 1) return 'rank-gold';
+	if (r === 2) return 'rank-silver';
+	if (r === 3) return 'rank-bronze';
+	if (typeof r === 'number' && r <= 15) return 'rank-top15';
+	return '';
+}
+
+function roleAlignmentClass(role) {
+	return role === 'Mafia' ? 'align-mafia' : 'align-town';
+}
+
 function showToast(msg) {
 	const toast = $('#toast');
+	if (!toast) return;
 	toast.textContent = msg;
 	toast.classList.remove('hidden');
 	clearTimeout(toast._timer);
 	toast._timer = setTimeout(() => toast.classList.add('hidden'), 4000);
 }
 
-async function loadData() {
+async function load() {
 	try {
 		const resp = await fetch('./data.json', { cache: 'no-cache' });
 		if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
 		const data = await resp.json();
-		renderSummary(data.game_summary);
-		renderGames(data.games);
+		const rankMap = new Map();
+		const byRating = [...(data.players || [])].sort((a, b) => b.rating - a.rating);
+		byRating.forEach((p, i) => rankMap.set(p.name, i + 1));
+		render(data.games || [], rankMap);
 	} catch (e) {
-		showToast('Failed to load data: ' + e.message);
+		showToast('Failed to load match history: ' + e.message);
 	}
 }
 
-function renderSummary(s) {
-	$('#stat-total-games').textContent = s.total_games;
-	$('#stat-mafia-pct').textContent = s.mafia_win_pct + '%';
-	$('#stat-town-pct').textContent = s.town_win_pct + '%';
-}
-
-function renderGames(games) {
+function render(games, rankMap) {
 	const container = $('#games-list');
 	container.innerHTML = '';
 
@@ -38,56 +49,62 @@ function renderGames(games) {
 	}
 
 	for (const g of games) {
-		const card = document.createElement('div');
-		card.className = 'game-card';
-
-		const winnerClass = g.winner.toLowerCase() === 'mafia' ? 'mafia' : 'town';
-		const mafiaPills = g.mafia
-			.map((n) => `<span class="player-pill mafia">${escapeHtml(n)}</span>`)
-			.join(' ');
-		const townPills = g.town
-			.map((t) => {
-				const roleClass = pillRoleClass(t.role);
-				const roleTag = t.role && t.role !== 'Town'
-					? `<span class="role">${escapeHtml(t.role)}</span>`
-					: '';
-				return `<span class="player-pill ${roleClass}">${escapeHtml(t.name)}${roleTag}</span>`;
-			})
-			.join(' ');
-
-		let extra = '';
-		if (g.n0.length) {
-			const pills = g.n0.map((n) => `<span class="player-pill">${escapeHtml(n)}</span>`).join(' ');
-			extra += `<div class="game-card-row"><span class="game-card-label">N0</span>${pills}</div>`;
-		}
-		if (g.ghosts.length) {
-			const pills = g.ghosts
-				.map((n) => `<span class="player-pill">${escapeHtml(n)}</span>`)
-				.join(' ');
-			extra += `<div class="game-card-row"><span class="game-card-label">Ghosts</span>${pills}</div>`;
-		}
-
-		card.innerHTML = `
-			<div class="game-card-header">
-				<span class="game-card-id">Game ${g.game_id}</span>
-				<span class="game-card-winner ${winnerClass}">${escapeHtml(g.winner)} Win</span>
-			</div>
-			<div class="game-card-row"><span class="game-card-label">Mafia</span>${mafiaPills}</div>
-			<div class="game-card-row"><span class="game-card-label">Town</span>${townPills}</div>
-			${extra}
-		`;
-		container.appendChild(card);
+		container.appendChild(renderGame(g, rankMap));
 	}
 }
 
-function pillRoleClass(role) {
-	switch ((role || '').toLowerCase()) {
-		case 'cop': return 'cop';
-		case 'medic': return 'medic';
-		case 'vigilante':
-		case 'vigi': return 'vigi';
-		default: return 'town';
+function renderGame(g, rankMap) {
+	const card = document.createElement('section');
+	card.className = 'last-game match-history-game';
+
+	const winnerLabel = g.winner ? `${escapeHtml(g.winner)} Win` : '—';
+	const winnerCls = (g.winner || '').toLowerCase() === 'mafia' ? 'align-mafia' : 'align-town';
+
+	let rows = '';
+	for (const p of g.players || []) {
+		const alignCls = roleAlignmentClass(p.role);
+		const isExcluded = p.result === 'Ghost' || p.result === 'Night Zero';
+		if (isExcluded) {
+			rows += `<tr class="excluded-row">
+				<td>-</td>
+				<td>${escapeHtml(p.player)}</td>
+				<td class="${alignCls}">${escapeHtml(p.role)}</td>
+				<td>${escapeHtml(p.result)}</td>
+				<td>-</td>
+				<td>0</td>
+			</tr>`;
+		} else {
+			const changeCls = p.rate_change >= 0 ? 'change-pos' : 'change-neg';
+			const resultCls = p.result === 'Win' ? 'change-pos' : 'change-neg';
+			const sign = p.rate_change >= 0 ? '+' : '';
+			const rank = rankMap.get(p.player) ?? '-';
+			const rc = typeof rank === 'number' ? rankClass(rank) : '';
+			rows += `<tr>
+				<td class="${rc}">${MEDALS[rank] || rank}</td>
+				<td>${escapeHtml(p.player)}</td>
+				<td class="${alignCls}">${escapeHtml(p.role)}</td>
+				<td class="${resultCls}">${escapeHtml(p.result)}</td>
+				<td>${p.new_rating ?? '-'}</td>
+				<td class="${changeCls}">${sign}${p.rate_change}</td>
+			</tr>`;
+		}
 	}
+
+	card.innerHTML = `
+		<div class="match-history-header">
+			<strong>Game #${g.game_id}</strong>
+			<span class="${winnerCls}">${winnerLabel}</span>
+		</div>
+		<table>
+			<thead>
+				<tr>
+					<th>#</th><th>Player</th><th>Role</th><th>Result</th><th>Rating</th><th>Change</th>
+				</tr>
+			</thead>
+			<tbody>${rows}</tbody>
+		</table>
+	`;
+	return card;
 }
 
 function escapeHtml(s) {
@@ -100,4 +117,4 @@ function escapeHtml(s) {
 	}[c]));
 }
 
-document.addEventListener('DOMContentLoaded', loadData);
+document.addEventListener('DOMContentLoaded', load);

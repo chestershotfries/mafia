@@ -182,14 +182,15 @@ def main():
 
         for s in sorted(slots, key=lambda x: x["position"]):
             name = s["name"]
-            alignment = "Mafia" if s["role"] == "Mafia" else "Town"
+            role = s["role"] or "Town"
+            alignment = "Mafia" if role == "Mafia" else "Town"
             if s["ghost"]:
                 history_rows_to_prepend.append(
-                    [int(gid), name, alignment, "Ghost", 0, "", "", "", "", "", ""]
+                    [int(gid), name, role, "Ghost", 0, "", "", "", "", "", ""]
                 )
             elif s["n0"]:
                 history_rows_to_prepend.append(
-                    [int(gid), name, alignment, "Night Zero", 0, "", "", "", "", "", ""]
+                    [int(gid), name, role, "Night Zero", 0, "", "", "", "", "", ""]
                 )
             elif name:
                 old = ratings.get(name, {"mu": TRUESKILL_MU, "sigma": TRUESKILL_SIGMA})
@@ -202,7 +203,7 @@ def main():
                     else ("Loss" if alignment == "Mafia" else "Win")
                 )
                 history_rows_to_prepend.append([
-                    int(gid), name, alignment, result_str,
+                    int(gid), name, role, result_str,
                     new_rating - old_rating,
                     old["mu"], nr["mu"], nr["sigma"],
                     old_rating, new_rating, old["sigma"],

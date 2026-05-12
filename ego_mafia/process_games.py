@@ -143,14 +143,15 @@ def main():
 
         for s in sorted(slots, key=lambda x: x["position"]):
             name = s["name"]
-            alignment = "Mafia" if s["role"] == "Mafia" else "Town"
+            role = s["role"] or "Town"
+            alignment = "Mafia" if role == "Mafia" else "Town"
             if s["ghost"]:
                 history_rows.append(
-                    [int(gid), name, alignment, "Ghost", 0, "", "", "", "", "", ""]
+                    [int(gid), name, role, "Ghost", 0, "", "", "", "", "", ""]
                 )
             elif s["n0"]:
                 history_rows.append(
-                    [int(gid), name, alignment, "Night Zero", 0, "", "", "", "", "", ""]
+                    [int(gid), name, role, "Night Zero", 0, "", "", "", "", "", ""]
                 )
             elif name:
                 old = ratings.get(name, {"mu": TRUESKILL_MU, "sigma": TRUESKILL_SIGMA})
@@ -166,7 +167,7 @@ def main():
                     [
                         int(gid),
                         name,
-                        alignment,
+                        role,
                         result_str,
                         new_rating - old_rating,
                         old["mu"],
@@ -222,7 +223,8 @@ def write_site_data(order, games, winners, ratings, history_rows):
     stats = {}
     history = {}
     for row in reversed(history_rows):  # history_rows is oldest-first
-        gid, name, alignment, result, rate_change = row[0], row[1], row[2], row[3], row[4]
+        gid, name, role, result, rate_change = row[0], row[1], row[2], row[3], row[4]
+        alignment = "Mafia" if role == "Mafia" else "Town"
         if result == "Ghost":
             continue
         entry = stats.setdefault(
@@ -295,36 +297,40 @@ def write_site_data(order, games, winners, ratings, history_rows):
         "town_win_pct": round(100 * town_wins / total_games, 1) if total_games else 0,
     }
 
+    # Build per-game player rows (last-game-style) from history_rows.
+    # history_rows is oldest-first with columns:
+    #   [gid, name, role, result, rate_change, old_mu, new_mu, new_sigma,
+    #    old_rating, new_rating, old_sigma]
+    games_by_gid = {}
+    for r in history_rows:
+        gid = int(r[0])
+        name, role, result, rate_change = r[1], r[2], r[3], r[4]
+        entry = {
+            "player": name,
+            "role": role,
+            "alignment": "Mafia" if role == "Mafia" else "Town",
+            "result": result,
+            "rate_change": int(rate_change) if rate_change != "" else 0,
+        }
+        if r[5] != "" and r[8] != "" and r[9] != "":
+            entry.update({
+                "old_mu": float(r[5]),
+                "new_mu": float(r[6]),
+                "new_sigma": float(r[7]),
+                "old_rating": int(r[8]),
+                "new_rating": int(r[9]),
+                "old_sigma": float(r[10]),
+            })
+        games_by_gid.setdefault(gid, []).append(entry)
+
     games_summary = []
     for gid in order:
-        rows = games[gid]
-        winner = winners[gid]
-        mafia, town, n0, ghosts = [], [], [], []
-        for r in sorted(rows, key=lambda x: int(x["Position"])):
-            name = r["Name"].strip()
-            role = r["Role"].strip()
-            is_ghost = str(r.get("IsGhost", "")).strip().lower() in ("true", "1", "yes")
-            is_n0 = str(r.get("NightZero", "")).strip().lower() in ("true", "1", "yes")
-            if not name:
-                continue
-            if is_ghost:
-                ghosts.append(name)
-            elif is_n0:
-                n0.append(name)
-            elif role == "Mafia":
-                mafia.append(name)
-            else:
-                town.append({"name": name, "role": role})
-        games_summary.append(
-            {
-                "game_id": int(gid),
-                "winner": winner.strip().capitalize(),
-                "mafia": mafia,
-                "town": town,
-                "n0": n0,
-                "ghosts": ghosts,
-            }
-        )
+        winner = winners[gid].strip().capitalize()
+        games_summary.append({
+            "game_id": int(gid),
+            "winner": winner,
+            "players": games_by_gid.get(int(gid), []),
+        })
     games_summary.sort(key=lambda g: g["game_id"], reverse=True)
 
     SITE_DATA.parent.mkdir(parents=True, exist_ok=True)

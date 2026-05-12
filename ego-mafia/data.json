@@ -477,113 +477,379 @@
     {
       "game_id": 2,
       "winner": "Town",
-      "mafia": [
-        "Double A",
-        "Decode",
-        "Keegan"
-      ],
-      "town": [
+      "players": [
         {
-          "name": "Cyclone",
-          "role": "Cop"
+          "player": "Double A",
+          "role": "Mafia",
+          "alignment": "Mafia",
+          "result": "Loss",
+          "rate_change": -88,
+          "old_mu": 24.20824036946116,
+          "new_mu": 22.798635085178944,
+          "new_sigma": 8.195484338342377,
+          "old_rating": 802,
+          "new_rating": 714,
+          "old_sigma": 8.272731611951896
         },
         {
-          "name": "Motr",
-          "role": "Medic"
+          "player": "Decode",
+          "role": "Mafia",
+          "alignment": "Mafia",
+          "result": "Loss",
+          "rate_change": -88,
+          "old_mu": 25.79175963053884,
+          "new_mu": 24.382154346256627,
+          "new_sigma": 8.195484338342377,
+          "old_rating": 910,
+          "new_rating": 822,
+          "old_sigma": 8.272731611951896
         },
         {
-          "name": "Coffee",
-          "role": "Vigilante"
+          "player": "Keegan",
+          "role": "Mafia",
+          "alignment": "Mafia",
+          "result": "Loss",
+          "rate_change": -88,
+          "old_mu": 24.20824036946116,
+          "new_mu": 22.798635085178944,
+          "new_sigma": 8.195484338342377,
+          "old_rating": 802,
+          "new_rating": 714,
+          "old_sigma": 8.272731611951896
         },
         {
-          "name": "Chester",
-          "role": "Town"
+          "player": "Cyclone",
+          "role": "Cop",
+          "alignment": "Town",
+          "result": "Win",
+          "rate_change": 104,
+          "old_mu": 24.20824036946116,
+          "new_mu": 25.617845653743377,
+          "new_sigma": 8.195484338342377,
+          "old_rating": 802,
+          "new_rating": 906,
+          "old_sigma": 8.272731611951896
         },
         {
-          "name": "Rocker",
-          "role": "Town"
+          "player": "Motr",
+          "role": "Medic",
+          "alignment": "Town",
+          "result": "Win",
+          "rate_change": 104,
+          "old_mu": 25.79175963053884,
+          "new_mu": 27.201364914821063,
+          "new_sigma": 8.195484338342377,
+          "old_rating": 910,
+          "new_rating": 1014,
+          "old_sigma": 8.272731611951896
         },
         {
-          "name": "Chipper",
-          "role": "Town"
+          "player": "Coffee",
+          "role": "Vigilante",
+          "alignment": "Town",
+          "result": "Win",
+          "rate_change": 105,
+          "old_mu": 25.0,
+          "new_mu": 26.43032996689729,
+          "new_sigma": 8.2543528944042,
+          "old_rating": 850,
+          "new_rating": 955,
+          "old_sigma": 8.333333333333334
         },
         {
-          "name": "Machop",
-          "role": "Town"
+          "player": "Chester",
+          "role": "Town",
+          "alignment": "Town",
+          "result": "Win",
+          "rate_change": 104,
+          "old_mu": 25.79175963053884,
+          "new_mu": 27.201364914821056,
+          "new_sigma": 8.195484338342377,
+          "old_rating": 910,
+          "new_rating": 1014,
+          "old_sigma": 8.272731611951896
         },
         {
-          "name": "Lofty",
-          "role": "Town"
+          "player": "Rocker",
+          "role": "Town",
+          "alignment": "Town",
+          "result": "Win",
+          "rate_change": 104,
+          "old_mu": 24.20824036946116,
+          "new_mu": 25.617845653743377,
+          "new_sigma": 8.195484338342377,
+          "old_rating": 802,
+          "new_rating": 906,
+          "old_sigma": 8.272731611951896
         },
         {
-          "name": "Heck",
-          "role": "Town"
+          "player": "Chipper",
+          "role": "Town",
+          "alignment": "Town",
+          "result": "Win",
+          "rate_change": 104,
+          "old_mu": 24.20824036946116,
+          "new_mu": 25.617845653743377,
+          "new_sigma": 8.195484338342377,
+          "old_rating": 802,
+          "new_rating": 906,
+          "old_sigma": 8.272731611951896
         },
         {
-          "name": "Strik3r",
-          "role": "Town"
+          "player": "Machop",
+          "role": "Town",
+          "alignment": "Town",
+          "result": "Win",
+          "rate_change": 104,
+          "old_mu": 24.20824036946116,
+          "new_mu": 25.61784565374338,
+          "new_sigma": 8.195484338342377,
+          "old_rating": 802,
+          "new_rating": 906,
+          "old_sigma": 8.272731611951896
+        },
+        {
+          "player": "Lofty",
+          "role": "Town",
+          "alignment": "Town",
+          "result": "Win",
+          "rate_change": 104,
+          "old_mu": 24.20824036946116,
+          "new_mu": 25.61784565374338,
+          "new_sigma": 8.195484338342377,
+          "old_rating": 802,
+          "new_rating": 906,
+          "old_sigma": 8.272731611951896
+        },
+        {
+          "player": "Heck",
+          "role": "Town",
+          "alignment": "Town",
+          "result": "Win",
+          "rate_change": 104,
+          "old_mu": 24.20824036946116,
+          "new_mu": 25.61784565374338,
+          "new_sigma": 8.195484338342377,
+          "old_rating": 802,
+          "new_rating": 906,
+          "old_sigma": 8.272731611951896
+        },
+        {
+          "player": "Strik3r",
+          "role": "Town",
+          "alignment": "Town",
+          "result": "Win",
+          "rate_change": 105,
+          "old_mu": 25.0,
+          "new_mu": 26.430329966897293,
+          "new_sigma": 8.2543528944042,
+          "old_rating": 850,
+          "new_rating": 955,
+          "old_sigma": 8.333333333333334
+        },
+        {
+          "player": "Ghost1",
+          "role": "Town",
+          "alignment": "Town",
+          "result": "Ghost",
+          "rate_change": 0
+        },
+        {
+          "player": "Ghost2",
+          "role": "Town",
+          "alignment": "Town",
+          "result": "Ghost",
+          "rate_change": 0
         }
-      ],
-      "n0": [],
-      "ghosts": [
-        "Ghost1",
-        "Ghost2"
       ]
     },
     {
       "game_id": 1,
       "winner": "Mafia",
-      "mafia": [
-        "Chester",
-        "Motr",
-        "Decode"
-      ],
-      "town": [
+      "players": [
         {
-          "name": "Heck",
-          "role": "Cop"
+          "player": "Chester",
+          "role": "Mafia",
+          "alignment": "Mafia",
+          "result": "Win",
+          "rate_change": 60,
+          "old_mu": 25.0,
+          "new_mu": 25.79175963053884,
+          "new_sigma": 8.272731611951896,
+          "old_rating": 850,
+          "new_rating": 910,
+          "old_sigma": 8.333333333333334
         },
         {
-          "name": "Double A",
-          "role": "Medic"
+          "player": "Motr",
+          "role": "Mafia",
+          "alignment": "Mafia",
+          "result": "Win",
+          "rate_change": 60,
+          "old_mu": 25.0,
+          "new_mu": 25.79175963053884,
+          "new_sigma": 8.272731611951896,
+          "old_rating": 850,
+          "new_rating": 910,
+          "old_sigma": 8.333333333333334
         },
         {
-          "name": "Chipper",
-          "role": "Vigilante"
+          "player": "Decode",
+          "role": "Mafia",
+          "alignment": "Mafia",
+          "result": "Win",
+          "rate_change": 60,
+          "old_mu": 25.0,
+          "new_mu": 25.79175963053884,
+          "new_sigma": 8.272731611951896,
+          "old_rating": 850,
+          "new_rating": 910,
+          "old_sigma": 8.333333333333334
         },
         {
-          "name": "Lofty",
-          "role": "Town"
+          "player": "Heck",
+          "role": "Cop",
+          "alignment": "Town",
+          "result": "Loss",
+          "rate_change": -48,
+          "old_mu": 25.0,
+          "new_mu": 24.20824036946116,
+          "new_sigma": 8.272731611951896,
+          "old_rating": 850,
+          "new_rating": 802,
+          "old_sigma": 8.333333333333334
         },
         {
-          "name": "Rocker",
-          "role": "Town"
+          "player": "Double A",
+          "role": "Medic",
+          "alignment": "Town",
+          "result": "Loss",
+          "rate_change": -48,
+          "old_mu": 25.0,
+          "new_mu": 24.20824036946116,
+          "new_sigma": 8.272731611951896,
+          "old_rating": 850,
+          "new_rating": 802,
+          "old_sigma": 8.333333333333334
         },
         {
-          "name": "Cyclone",
-          "role": "Town"
+          "player": "Chipper",
+          "role": "Vigilante",
+          "alignment": "Town",
+          "result": "Loss",
+          "rate_change": -48,
+          "old_mu": 25.0,
+          "new_mu": 24.20824036946116,
+          "new_sigma": 8.272731611951896,
+          "old_rating": 850,
+          "new_rating": 802,
+          "old_sigma": 8.333333333333334
         },
         {
-          "name": "Jonas",
-          "role": "Town"
+          "player": "Lofty",
+          "role": "Town",
+          "alignment": "Town",
+          "result": "Loss",
+          "rate_change": -48,
+          "old_mu": 25.0,
+          "new_mu": 24.20824036946116,
+          "new_sigma": 8.272731611951896,
+          "old_rating": 850,
+          "new_rating": 802,
+          "old_sigma": 8.333333333333334
         },
         {
-          "name": "Ken",
-          "role": "Town"
+          "player": "Rocker",
+          "role": "Town",
+          "alignment": "Town",
+          "result": "Loss",
+          "rate_change": -48,
+          "old_mu": 25.0,
+          "new_mu": 24.20824036946116,
+          "new_sigma": 8.272731611951896,
+          "old_rating": 850,
+          "new_rating": 802,
+          "old_sigma": 8.333333333333334
         },
         {
-          "name": "Keegan",
-          "role": "Town"
+          "player": "Cyclone",
+          "role": "Town",
+          "alignment": "Town",
+          "result": "Loss",
+          "rate_change": -48,
+          "old_mu": 25.0,
+          "new_mu": 24.20824036946116,
+          "new_sigma": 8.272731611951896,
+          "old_rating": 850,
+          "new_rating": 802,
+          "old_sigma": 8.333333333333334
         },
         {
-          "name": "Machop",
-          "role": "Town"
+          "player": "Jonas",
+          "role": "Town",
+          "alignment": "Town",
+          "result": "Loss",
+          "rate_change": -48,
+          "old_mu": 25.0,
+          "new_mu": 24.20824036946116,
+          "new_sigma": 8.272731611951896,
+          "old_rating": 850,
+          "new_rating": 802,
+          "old_sigma": 8.333333333333334
+        },
+        {
+          "player": "Ken",
+          "role": "Town",
+          "alignment": "Town",
+          "result": "Loss",
+          "rate_change": -48,
+          "old_mu": 25.0,
+          "new_mu": 24.20824036946116,
+          "new_sigma": 8.272731611951896,
+          "old_rating": 850,
+          "new_rating": 802,
+          "old_sigma": 8.333333333333334
+        },
+        {
+          "player": "Keegan",
+          "role": "Town",
+          "alignment": "Town",
+          "result": "Loss",
+          "rate_change": -48,
+          "old_mu": 25.0,
+          "new_mu": 24.20824036946116,
+          "new_sigma": 8.272731611951896,
+          "old_rating": 850,
+          "new_rating": 802,
+          "old_sigma": 8.333333333333334
+        },
+        {
+          "player": "Machop",
+          "role": "Town",
+          "alignment": "Town",
+          "result": "Loss",
+          "rate_change": -48,
+          "old_mu": 25.0,
+          "new_mu": 24.20824036946116,
+          "new_sigma": 8.272731611951896,
+          "old_rating": 850,
+          "new_rating": 802,
+          "old_sigma": 8.333333333333334
+        },
+        {
+          "player": "Ghost1",
+          "role": "Town",
+          "alignment": "Town",
+          "result": "Ghost",
+          "rate_change": 0
+        },
+        {
+          "player": "Ghost2",
+          "role": "Town",
+          "alignment": "Town",
+          "result": "Ghost",
+          "rate_change": 0
         }
-      ],
-      "n0": [],
-      "ghosts": [
-        "Ghost1",
-        "Ghost2"
       ]
     }
   ]
