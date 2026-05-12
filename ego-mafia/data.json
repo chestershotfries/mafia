@@ -1,0 +1,590 @@
+{
+  "players": [
+    {
+      "name": "Chester",
+      "mu": 27.201364914821056,
+      "sigma": 8.195484338342377,
+      "rating": 1014,
+      "town_games": 1,
+      "town_wins": 1,
+      "town_win_pct": 100.0,
+      "mafia_games": 1,
+      "mafia_wins": 1,
+      "mafia_win_pct": 100.0,
+      "total_games": 2,
+      "total_wins": 2,
+      "total_win_pct": 100.0
+    },
+    {
+      "name": "Motr",
+      "mu": 27.201364914821063,
+      "sigma": 8.195484338342377,
+      "rating": 1014,
+      "town_games": 1,
+      "town_wins": 1,
+      "town_win_pct": 100.0,
+      "mafia_games": 1,
+      "mafia_wins": 1,
+      "mafia_win_pct": 100.0,
+      "total_games": 2,
+      "total_wins": 2,
+      "total_win_pct": 100.0
+    },
+    {
+      "name": "Coffee",
+      "mu": 26.43032996689729,
+      "sigma": 8.2543528944042,
+      "rating": 955,
+      "town_games": 1,
+      "town_wins": 1,
+      "town_win_pct": 100.0,
+      "mafia_games": 0,
+      "mafia_wins": 0,
+      "mafia_win_pct": 0,
+      "total_games": 1,
+      "total_wins": 1,
+      "total_win_pct": 100.0
+    },
+    {
+      "name": "Strik3r",
+      "mu": 26.430329966897293,
+      "sigma": 8.2543528944042,
+      "rating": 955,
+      "town_games": 1,
+      "town_wins": 1,
+      "town_win_pct": 100.0,
+      "mafia_games": 0,
+      "mafia_wins": 0,
+      "mafia_win_pct": 0,
+      "total_games": 1,
+      "total_wins": 1,
+      "total_win_pct": 100.0
+    },
+    {
+      "name": "Heck",
+      "mu": 25.61784565374338,
+      "sigma": 8.195484338342377,
+      "rating": 906,
+      "town_games": 2,
+      "town_wins": 1,
+      "town_win_pct": 50.0,
+      "mafia_games": 0,
+      "mafia_wins": 0,
+      "mafia_win_pct": 0,
+      "total_games": 2,
+      "total_wins": 1,
+      "total_win_pct": 50.0
+    },
+    {
+      "name": "Chipper",
+      "mu": 25.617845653743377,
+      "sigma": 8.195484338342377,
+      "rating": 906,
+      "town_games": 2,
+      "town_wins": 1,
+      "town_win_pct": 50.0,
+      "mafia_games": 0,
+      "mafia_wins": 0,
+      "mafia_win_pct": 0,
+      "total_games": 2,
+      "total_wins": 1,
+      "total_win_pct": 50.0
+    },
+    {
+      "name": "Lofty",
+      "mu": 25.61784565374338,
+      "sigma": 8.195484338342377,
+      "rating": 906,
+      "town_games": 2,
+      "town_wins": 1,
+      "town_win_pct": 50.0,
+      "mafia_games": 0,
+      "mafia_wins": 0,
+      "mafia_win_pct": 0,
+      "total_games": 2,
+      "total_wins": 1,
+      "total_win_pct": 50.0
+    },
+    {
+      "name": "Rocker",
+      "mu": 25.617845653743377,
+      "sigma": 8.195484338342377,
+      "rating": 906,
+      "town_games": 2,
+      "town_wins": 1,
+      "town_win_pct": 50.0,
+      "mafia_games": 0,
+      "mafia_wins": 0,
+      "mafia_win_pct": 0,
+      "total_games": 2,
+      "total_wins": 1,
+      "total_win_pct": 50.0
+    },
+    {
+      "name": "Cyclone",
+      "mu": 25.617845653743377,
+      "sigma": 8.195484338342377,
+      "rating": 906,
+      "town_games": 2,
+      "town_wins": 1,
+      "town_win_pct": 50.0,
+      "mafia_games": 0,
+      "mafia_wins": 0,
+      "mafia_win_pct": 0,
+      "total_games": 2,
+      "total_wins": 1,
+      "total_win_pct": 50.0
+    },
+    {
+      "name": "Machop",
+      "mu": 25.61784565374338,
+      "sigma": 8.195484338342377,
+      "rating": 906,
+      "town_games": 2,
+      "town_wins": 1,
+      "town_win_pct": 50.0,
+      "mafia_games": 0,
+      "mafia_wins": 0,
+      "mafia_win_pct": 0,
+      "total_games": 2,
+      "total_wins": 1,
+      "total_win_pct": 50.0
+    },
+    {
+      "name": "Decode",
+      "mu": 24.382154346256627,
+      "sigma": 8.195484338342377,
+      "rating": 822,
+      "town_games": 0,
+      "town_wins": 0,
+      "town_win_pct": 0,
+      "mafia_games": 2,
+      "mafia_wins": 1,
+      "mafia_win_pct": 50.0,
+      "total_games": 2,
+      "total_wins": 1,
+      "total_win_pct": 50.0
+    },
+    {
+      "name": "Jonas",
+      "mu": 24.20824036946116,
+      "sigma": 8.272731611951896,
+      "rating": 802,
+      "town_games": 1,
+      "town_wins": 0,
+      "town_win_pct": 0.0,
+      "mafia_games": 0,
+      "mafia_wins": 0,
+      "mafia_win_pct": 0,
+      "total_games": 1,
+      "total_wins": 0,
+      "total_win_pct": 0.0
+    },
+    {
+      "name": "Ken",
+      "mu": 24.20824036946116,
+      "sigma": 8.272731611951896,
+      "rating": 802,
+      "town_games": 1,
+      "town_wins": 0,
+      "town_win_pct": 0.0,
+      "mafia_games": 0,
+      "mafia_wins": 0,
+      "mafia_win_pct": 0,
+      "total_games": 1,
+      "total_wins": 0,
+      "total_win_pct": 0.0
+    },
+    {
+      "name": "Double A",
+      "mu": 22.798635085178944,
+      "sigma": 8.195484338342377,
+      "rating": 714,
+      "town_games": 1,
+      "town_wins": 0,
+      "town_win_pct": 0.0,
+      "mafia_games": 1,
+      "mafia_wins": 0,
+      "mafia_win_pct": 0.0,
+      "total_games": 2,
+      "total_wins": 0,
+      "total_win_pct": 0.0
+    },
+    {
+      "name": "Keegan",
+      "mu": 22.798635085178944,
+      "sigma": 8.195484338342377,
+      "rating": 714,
+      "town_games": 1,
+      "town_wins": 0,
+      "town_win_pct": 0.0,
+      "mafia_games": 1,
+      "mafia_wins": 0,
+      "mafia_win_pct": 0.0,
+      "total_games": 2,
+      "total_wins": 0,
+      "total_win_pct": 0.0
+    }
+  ],
+  "game_summary": {
+    "total_games": 2,
+    "mafia_wins": 1,
+    "town_wins": 1,
+    "mafia_win_pct": 50.0,
+    "town_win_pct": 50.0
+  },
+  "history": {
+    "Strik3r": [
+      {
+        "game_id": 2,
+        "alignment": "Town",
+        "result": "Win",
+        "rate_change": 105,
+        "old_rating": 850,
+        "new_rating": 955
+      }
+    ],
+    "Heck": [
+      {
+        "game_id": 2,
+        "alignment": "Town",
+        "result": "Win",
+        "rate_change": 104,
+        "old_rating": 802,
+        "new_rating": 906
+      },
+      {
+        "game_id": 1,
+        "alignment": "Town",
+        "result": "Loss",
+        "rate_change": -48,
+        "old_rating": 850,
+        "new_rating": 802
+      }
+    ],
+    "Lofty": [
+      {
+        "game_id": 2,
+        "alignment": "Town",
+        "result": "Win",
+        "rate_change": 104,
+        "old_rating": 802,
+        "new_rating": 906
+      },
+      {
+        "game_id": 1,
+        "alignment": "Town",
+        "result": "Loss",
+        "rate_change": -48,
+        "old_rating": 850,
+        "new_rating": 802
+      }
+    ],
+    "Machop": [
+      {
+        "game_id": 2,
+        "alignment": "Town",
+        "result": "Win",
+        "rate_change": 104,
+        "old_rating": 802,
+        "new_rating": 906
+      },
+      {
+        "game_id": 1,
+        "alignment": "Town",
+        "result": "Loss",
+        "rate_change": -48,
+        "old_rating": 850,
+        "new_rating": 802
+      }
+    ],
+    "Chipper": [
+      {
+        "game_id": 2,
+        "alignment": "Town",
+        "result": "Win",
+        "rate_change": 104,
+        "old_rating": 802,
+        "new_rating": 906
+      },
+      {
+        "game_id": 1,
+        "alignment": "Town",
+        "result": "Loss",
+        "rate_change": -48,
+        "old_rating": 850,
+        "new_rating": 802
+      }
+    ],
+    "Rocker": [
+      {
+        "game_id": 2,
+        "alignment": "Town",
+        "result": "Win",
+        "rate_change": 104,
+        "old_rating": 802,
+        "new_rating": 906
+      },
+      {
+        "game_id": 1,
+        "alignment": "Town",
+        "result": "Loss",
+        "rate_change": -48,
+        "old_rating": 850,
+        "new_rating": 802
+      }
+    ],
+    "Chester": [
+      {
+        "game_id": 2,
+        "alignment": "Town",
+        "result": "Win",
+        "rate_change": 104,
+        "old_rating": 910,
+        "new_rating": 1014
+      },
+      {
+        "game_id": 1,
+        "alignment": "Mafia",
+        "result": "Win",
+        "rate_change": 60,
+        "old_rating": 850,
+        "new_rating": 910
+      }
+    ],
+    "Coffee": [
+      {
+        "game_id": 2,
+        "alignment": "Town",
+        "result": "Win",
+        "rate_change": 105,
+        "old_rating": 850,
+        "new_rating": 955
+      }
+    ],
+    "Motr": [
+      {
+        "game_id": 2,
+        "alignment": "Town",
+        "result": "Win",
+        "rate_change": 104,
+        "old_rating": 910,
+        "new_rating": 1014
+      },
+      {
+        "game_id": 1,
+        "alignment": "Mafia",
+        "result": "Win",
+        "rate_change": 60,
+        "old_rating": 850,
+        "new_rating": 910
+      }
+    ],
+    "Cyclone": [
+      {
+        "game_id": 2,
+        "alignment": "Town",
+        "result": "Win",
+        "rate_change": 104,
+        "old_rating": 802,
+        "new_rating": 906
+      },
+      {
+        "game_id": 1,
+        "alignment": "Town",
+        "result": "Loss",
+        "rate_change": -48,
+        "old_rating": 850,
+        "new_rating": 802
+      }
+    ],
+    "Keegan": [
+      {
+        "game_id": 2,
+        "alignment": "Mafia",
+        "result": "Loss",
+        "rate_change": -88,
+        "old_rating": 802,
+        "new_rating": 714
+      },
+      {
+        "game_id": 1,
+        "alignment": "Town",
+        "result": "Loss",
+        "rate_change": -48,
+        "old_rating": 850,
+        "new_rating": 802
+      }
+    ],
+    "Decode": [
+      {
+        "game_id": 2,
+        "alignment": "Mafia",
+        "result": "Loss",
+        "rate_change": -88,
+        "old_rating": 910,
+        "new_rating": 822
+      },
+      {
+        "game_id": 1,
+        "alignment": "Mafia",
+        "result": "Win",
+        "rate_change": 60,
+        "old_rating": 850,
+        "new_rating": 910
+      }
+    ],
+    "Double A": [
+      {
+        "game_id": 2,
+        "alignment": "Mafia",
+        "result": "Loss",
+        "rate_change": -88,
+        "old_rating": 802,
+        "new_rating": 714
+      },
+      {
+        "game_id": 1,
+        "alignment": "Town",
+        "result": "Loss",
+        "rate_change": -48,
+        "old_rating": 850,
+        "new_rating": 802
+      }
+    ],
+    "Ken": [
+      {
+        "game_id": 1,
+        "alignment": "Town",
+        "result": "Loss",
+        "rate_change": -48,
+        "old_rating": 850,
+        "new_rating": 802
+      }
+    ],
+    "Jonas": [
+      {
+        "game_id": 1,
+        "alignment": "Town",
+        "result": "Loss",
+        "rate_change": -48,
+        "old_rating": 850,
+        "new_rating": 802
+      }
+    ]
+  },
+  "games": [
+    {
+      "game_id": 2,
+      "winner": "Town",
+      "mafia": [
+        "Double A",
+        "Decode",
+        "Keegan"
+      ],
+      "town": [
+        {
+          "name": "Cyclone",
+          "role": "Cop"
+        },
+        {
+          "name": "Motr",
+          "role": "Medic"
+        },
+        {
+          "name": "Coffee",
+          "role": "Vigilante"
+        },
+        {
+          "name": "Chester",
+          "role": "Town"
+        },
+        {
+          "name": "Rocker",
+          "role": "Town"
+        },
+        {
+          "name": "Chipper",
+          "role": "Town"
+        },
+        {
+          "name": "Machop",
+          "role": "Town"
+        },
+        {
+          "name": "Lofty",
+          "role": "Town"
+        },
+        {
+          "name": "Heck",
+          "role": "Town"
+        },
+        {
+          "name": "Strik3r",
+          "role": "Town"
+        }
+      ],
+      "n0": [],
+      "ghosts": [
+        "Ghost1",
+        "Ghost2"
+      ]
+    },
+    {
+      "game_id": 1,
+      "winner": "Mafia",
+      "mafia": [
+        "Chester",
+        "Motr",
+        "Decode"
+      ],
+      "town": [
+        {
+          "name": "Heck",
+          "role": "Cop"
+        },
+        {
+          "name": "Double A",
+          "role": "Medic"
+        },
+        {
+          "name": "Chipper",
+          "role": "Vigilante"
+        },
+        {
+          "name": "Lofty",
+          "role": "Town"
+        },
+        {
+          "name": "Rocker",
+          "role": "Town"
+        },
+        {
+          "name": "Cyclone",
+          "role": "Town"
+        },
+        {
+          "name": "Jonas",
+          "role": "Town"
+        },
+        {
+          "name": "Ken",
+          "role": "Town"
+        },
+        {
+          "name": "Keegan",
+          "role": "Town"
+        },
+        {
+          "name": "Machop",
+          "role": "Town"
+        }
+      ],
+      "n0": [],
+      "ghosts": [
+        "Ghost1",
+        "Ghost2"
+      ]
+    }
+  ]
+}

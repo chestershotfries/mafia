@@ -2,7 +2,8 @@
 
 Reads games_input.csv (one row per slot), runs TrueSkill with the same
 ghost-padded teams as backend/main.py, and writes match_results.xlsx with
-MatchRatings and MatchHistory sheets.
+MatchRatings and MatchHistory sheets. Also emits ../ego-mafia/data.json
+consumed by the standalone ego-mafia static site.
 
 Usage:
     pip install trueskill openpyxl scipy
@@ -10,6 +11,7 @@ Usage:
 """
 
 import csv
+import json
 from pathlib import Path
 
 from openpyxl import Workbook
@@ -18,6 +20,7 @@ from trueskill import Rating, TrueSkill
 HERE = Path(__file__).parent
 INPUT_CSV = HERE / "games_input.csv"
 OUTPUT_XLSX = HERE / "match_results.xlsx"
+SITE_DATA = HERE.parent / "ego-mafia" / "data.json"
 
 TRUESKILL_MU = 25
 TRUESKILL_SIGMA = 25 / 3
@@ -209,6 +212,134 @@ def main():
 
     wb.save(OUTPUT_XLSX)
     print(f"Wrote {OUTPUT_XLSX} ({len(ratings)} players, {len(order)} games)")
+
+    write_site_data(order, games, winners, ratings, history_rows)
+
+
+def write_site_data(order, games, winners, ratings, history_rows):
+    """Emit data.json consumed by the ego-mafia static site."""
+    # Per-player aggregate stats and per-player rated history (oldest first)
+    stats = {}
+    history = {}
+    for row in reversed(history_rows):  # history_rows is oldest-first
+        gid, name, alignment, result, rate_change = row[0], row[1], row[2], row[3], row[4]
+        if result == "Ghost":
+            continue
+        entry = stats.setdefault(
+            name,
+            {
+                "name": name,
+                "town_games": 0,
+                "town_wins": 0,
+                "mafia_games": 0,
+                "mafia_wins": 0,
+            },
+        )
+        rated = result in ("Win", "Loss")
+        if rated:
+            if alignment == "Mafia":
+                entry["mafia_games"] += 1
+                if result == "Win":
+                    entry["mafia_wins"] += 1
+            else:
+                entry["town_games"] += 1
+                if result == "Win":
+                    entry["town_wins"] += 1
+        hist_entry = {
+            "game_id": gid,
+            "alignment": alignment,
+            "result": result,
+            "rate_change": int(rate_change) if rate_change != "" else 0,
+        }
+        if rated and row[8] != "" and row[9] != "":
+            hist_entry["old_rating"] = int(row[8])
+            hist_entry["new_rating"] = int(row[9])
+        history.setdefault(name, []).append(hist_entry)
+
+    players = []
+    for name, r in ratings.items():
+        s = stats.get(name, {"town_games": 0, "town_wins": 0, "mafia_games": 0, "mafia_wins": 0})
+        total_games = s["town_games"] + s["mafia_games"]
+        total_wins = s["town_wins"] + s["mafia_wins"]
+        players.append(
+            {
+                "name": name,
+                "mu": r["mu"],
+                "sigma": r["sigma"],
+                "rating": display_rating(r["mu"], r["sigma"]),
+                "town_games": s["town_games"],
+                "town_wins": s["town_wins"],
+                "town_win_pct": round(100 * s["town_wins"] / s["town_games"], 1)
+                if s["town_games"]
+                else 0,
+                "mafia_games": s["mafia_games"],
+                "mafia_wins": s["mafia_wins"],
+                "mafia_win_pct": round(100 * s["mafia_wins"] / s["mafia_games"], 1)
+                if s["mafia_games"]
+                else 0,
+                "total_games": total_games,
+                "total_wins": total_wins,
+                "total_win_pct": round(100 * total_wins / total_games, 1) if total_games else 0,
+            }
+        )
+    players.sort(key=lambda p: p["rating"], reverse=True)
+
+    total_games = len(order)
+    mafia_wins = sum(1 for g in order if winners[g].strip().lower().startswith("maf"))
+    town_wins = total_games - mafia_wins
+    game_summary = {
+        "total_games": total_games,
+        "mafia_wins": mafia_wins,
+        "town_wins": town_wins,
+        "mafia_win_pct": round(100 * mafia_wins / total_games, 1) if total_games else 0,
+        "town_win_pct": round(100 * town_wins / total_games, 1) if total_games else 0,
+    }
+
+    games_summary = []
+    for gid in order:
+        rows = games[gid]
+        winner = winners[gid]
+        mafia, town, n0, ghosts = [], [], [], []
+        for r in sorted(rows, key=lambda x: int(x["Position"])):
+            name = r["Name"].strip()
+            role = r["Role"].strip()
+            is_ghost = str(r.get("IsGhost", "")).strip().lower() in ("true", "1", "yes")
+            is_n0 = str(r.get("NightZero", "")).strip().lower() in ("true", "1", "yes")
+            if not name:
+                continue
+            if is_ghost:
+                ghosts.append(name)
+            elif is_n0:
+                n0.append(name)
+            elif role == "Mafia":
+                mafia.append(name)
+            else:
+                town.append({"name": name, "role": role})
+        games_summary.append(
+            {
+                "game_id": int(gid),
+                "winner": winner.strip().capitalize(),
+                "mafia": mafia,
+                "town": town,
+                "n0": n0,
+                "ghosts": ghosts,
+            }
+        )
+    games_summary.sort(key=lambda g: g["game_id"], reverse=True)
+
+    SITE_DATA.parent.mkdir(parents=True, exist_ok=True)
+    SITE_DATA.write_text(
+        json.dumps(
+            {
+                "players": players,
+                "game_summary": game_summary,
+                "history": history,
+                "games": games_summary,
+            },
+            indent=2,
+        )
+    )
+    print(f"Wrote {SITE_DATA}")
 
 
 if __name__ == "__main__":
