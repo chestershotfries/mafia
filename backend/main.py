@@ -16,7 +16,7 @@ from trueskill import TrueSkill, Rating
 
 # --- Constants ---
 
-SHEET_ID = "1vTc6XAa4beDM4n1syQ22Hs10JGVT9PuHNSoTmY051CQ"
+SHEET_ID = os.environ.get("SHEET_ID", "1vTc6XAa4beDM4n1syQ22Hs10JGVT9PuHNSoTmY051CQ")
 TRUESKILL_MU = 25
 TRUESKILL_SIGMA = 25 / 3
 
@@ -26,9 +26,9 @@ TOWN_GHOST_MU = 23.85
 TOWN_GHOST_SIGMA = 0.8
 
 # =============================================
-# GAME PASSWORD — CHANGE THIS VALUE AS NEEDED
+# GAME PASSWORD — set via GAME_PASSWORD env var per deployment
 # =============================================
-GAME_PASSWORD = "turtlesarefast"
+GAME_PASSWORD = os.environ.get("GAME_PASSWORD", "turtlesarefast")
 
 # Canonical name aliases — normalize variant spellings on record
 NAME_ALIASES = {
@@ -737,6 +737,46 @@ def get_player_history(body):
     return {"player_name": player_name, "games": games}
 
 
+def get_match_history():
+    """Return all games grouped by GameID, newest first."""
+    ss = get_sheet()
+    ws = ss.worksheet("MatchHistory")
+    rows = ws.get_all_values()[1:]
+    games = {}
+    order = []
+    for r in rows:
+        gid = r[0]
+        if not gid:
+            continue
+        if gid not in games:
+            games[gid] = {
+                "game_id": int(float(gid)),
+                "mafia": [],
+                "town": [],
+                "n0": [],
+                "ghosts": [],
+                "winner": None,
+            }
+            order.append(gid)
+        g = games[gid]
+        name, alignment, result = r[1], r[2], r[3]
+        if result == "Ghost":
+            g["ghosts"].append(name)
+            continue
+        if result == "Night Zero":
+            g["n0"].append(name)
+        if alignment == "Mafia":
+            g["mafia"].append(name)
+        else:
+            g["town"].append({"name": name, "role": "Town"})
+        if g["winner"] is None and result in ("Win", "Loss"):
+            g["winner"] = (
+                alignment if result == "Win"
+                else ("Town" if alignment == "Mafia" else "Mafia")
+            )
+    return {"games": [games[gid] for gid in order]}
+
+
 # --- HTTP handler ---
 
 
@@ -781,6 +821,8 @@ def main(request):
             result = get_stats()
         elif action == "getPlayerHistory":
             result = get_player_history(body)
+        elif action == "getMatchHistory":
+            result = get_match_history()
         else:
             return make_response({"error": f"Unknown action: {action}"}, 400)
 

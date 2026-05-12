@@ -1,7 +1,9 @@
 /* Mafia Randomizer frontend — GitHub Pages + Cloud Function backend */
 
-// Replace with your Cloud Function deployment URL
-const SCRIPT_URL = 'https://us-central1-mafia-tracker-310960.cloudfunctions.net/mafia-backend';
+// Backend URL: per-page override via window.SCRIPT_URL, otherwise the main deployment.
+const SCRIPT_URL = (typeof window !== 'undefined' && window.SCRIPT_URL !== undefined)
+	? window.SCRIPT_URL
+	: 'https://us-central1-mafia-tracker-310960.cloudfunctions.net/mafia-backend';
 
 const GHOST_NAME = 'Ghost';
 const RANDOM_ORG_API_KEY = '93e00e92-f44b-4b59-993a-309ecee52caa';
@@ -102,6 +104,9 @@ function showPanel(id) {
 // --- API helper ---
 
 async function api(action, data = {}) {
+	if (!SCRIPT_URL) {
+		throw new Error('Backend not configured for this site');
+	}
 	const resp = await fetch(SCRIPT_URL, {
 		method: 'POST',
 		headers: { 'Content-Type': 'application/json' },

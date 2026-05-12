@@ -1,0 +1,77 @@
+.games-list {
+	display: flex;
+	flex-direction: column;
+	gap: 0.75rem;
+}
+
+.game-card {
+	background: var(--surface-alt);
+	border: 1px solid var(--border);
+	border-radius: var(--radius);
+	padding: 0.85rem 1rem;
+}
+
+.game-card-header {
+	display: flex;
+	align-items: center;
+	gap: 0.75rem;
+	margin-bottom: 0.5rem;
+}
+
+.game-card-id {
+	font-weight: 700;
+	font-size: 1.05rem;
+}
+
+.game-card-winner {
+	font-size: 0.8rem;
+	font-weight: 700;
+	text-transform: uppercase;
+	padding: 0.15rem 0.5rem;
+	border-radius: 4px;
+}
+
+.game-card-winner.mafia {
+	background: var(--mafia-red);
+	color: #fff;
+}
+
+.game-card-winner.town {
+	background: var(--town-blue);
+	color: #fff;
+}
+
+.game-card-row {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: baseline;
+	gap: 0.4rem;
+	font-size: 0.9rem;
+	padding: 0.15rem 0;
+}
+
+.game-card-label {
+	color: var(--text-muted);
+	font-size: 0.75rem;
+	text-transform: uppercase;
+	min-width: 70px;
+}
+
+.player-pill {
+	display: inline-block;
+	font-size: 0.85rem;
+	padding: 0.05rem 0.45rem;
+	border-radius: 4px;
+	background: var(--surface);
+	border: 1px solid var(--border);
+}
+
+.player-pill.mafia {
+	border-color: var(--mafia-red);
+	color: #ffb3bf;
+}
+
+.player-pill.town {
+	border-color: var(--town-blue);
+	color: #b8d8f2;
+}

@@ -1,6 +1,8 @@
 /* Mafia Stats page — leaderboard, game summary, player detail */
 
-const SCRIPT_URL = 'https://us-central1-mafia-tracker-310960.cloudfunctions.net/mafia-backend';
+const SCRIPT_URL = (typeof window !== 'undefined' && window.SCRIPT_URL !== undefined)
+	? window.SCRIPT_URL
+	: 'https://us-central1-mafia-tracker-310960.cloudfunctions.net/mafia-backend';
 
 let statsData = null;
 let currentSort = { key: 'rating', desc: true };
@@ -21,6 +23,9 @@ function showToast(msg) {
 // --- API helper ---
 
 async function api(action, data = {}) {
+	if (!SCRIPT_URL) {
+		throw new Error('Backend not configured for this site');
+	}
 	const resp = await fetch(SCRIPT_URL, {
 		method: 'POST',
 		headers: { 'Content-Type': 'application/json' },
