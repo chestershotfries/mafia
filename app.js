@@ -83,6 +83,14 @@ const DARK_STARS_SETUPS = {
 const $ = (sel) => document.querySelector(sel);
 const $$ = (sel) => document.querySelectorAll(sel);
 
+function roleAlignmentClass(role) {
+	if (role === 'Mafia') return 'align-mafia';
+	if (role === 'Cop') return 'role-cop';
+	if (role === 'Medic') return 'role-medic';
+	if (role === 'Vigilante') return 'role-vig';
+	return 'align-town';
+}
+
 // --- Toast ---
 
 function showToast(msg, isSuccess) {
@@ -1343,7 +1351,7 @@ function renderResults(result) {
 
 	for (const p of result.players) {
 		const tr = document.createElement('tr');
-		const alignClass = p.alignment === 'Mafia' ? 'align-mafia' : 'align-town';
+		const alignClass = roleAlignmentClass(p.alignment);
 		const isExcluded = p.result === 'Ghost' || p.result === 'Night Zero';
 
 		if (isExcluded) {
@@ -1420,7 +1428,7 @@ async function loadLastGame() {
     </tr></thead><tbody>`;
 
 		for (const p of data.game.players) {
-			const alignClass = p.alignment === 'Mafia' ? 'align-mafia' : 'align-town';
+			const alignClass = roleAlignmentClass(p.alignment);
 			const isExcluded = p.result === 'Ghost' || p.result === 'Night Zero';
 			if (isExcluded) {
 				html += `<tr class="excluded-row">
