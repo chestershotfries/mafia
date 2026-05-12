@@ -91,6 +91,8 @@ function roleAlignmentClass(role) {
 	return 'align-town';
 }
 
+const RATING_LABEL = (typeof window !== 'undefined' && window.SITE_NAME === 'Ego Mafia') ? 'Ego' : 'Rating';
+
 // --- Toast ---
 
 function showToast(msg, isSuccess) {
@@ -1424,7 +1426,7 @@ async function loadLastGame() {
 
 		let html = `<p><strong>Game #${data.game.game_id}</strong></p>`;
 		html += `<table><thead><tr>
-      <th>#</th><th>Player</th><th>Alignment</th><th>Result</th><th>Rating</th><th>Change</th>
+      <th>#</th><th>Player</th><th>Alignment</th><th>Result</th><th>${RATING_LABEL}</th><th>Change</th>
     </tr></thead><tbody>`;
 
 		for (const p of data.game.players) {

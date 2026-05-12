@@ -126,7 +126,7 @@ function renderGame(g, rankMap) {
 		<table>
 			<thead>
 				<tr>
-					<th>#</th><th>Player</th><th>Role</th><th>Result</th><th>Rating</th><th>Change</th>
+					<th>#</th><th>Player</th><th>Role</th><th>Result</th><th>Ego</th><th>Change</th>
 				</tr>
 			</thead>
 			<tbody>${rows}</tbody>
