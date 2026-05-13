@@ -23,9 +23,15 @@ SHEET_ID = os.environ.get("SHEET_ID", "1vTc6XAa4beDM4n1syQ22Hs10JGVT9PuHNSoTmY05
 TRUESKILL_MU = 25
 TRUESKILL_SIGMA = 25 / 3
 
-MAFIA_GHOST_MU = 25.7
+if STORAGE == "gcs_json":  # ego-mafia
+    MAFIA_GHOST_MU = 25.275
+    TOWN_GHOST_MU = 24.275
+    _BETA = 5.0
+else:  # original mafia (sheets)
+    MAFIA_GHOST_MU = 25.7
+    TOWN_GHOST_MU = 23.85
+    _BETA = 5.5
 MAFIA_GHOST_SIGMA = 0.8
-TOWN_GHOST_MU = 23.85
 TOWN_GHOST_SIGMA = 0.8
 
 # =============================================
@@ -55,7 +61,7 @@ POSITION_ROLES = {
     6: "Vigilante",
 }
 
-env = TrueSkill(tau=0.1, beta=5.5, draw_probability=0.00)
+env = TrueSkill(tau=0.1, beta=_BETA, draw_probability=0.00)
 
 SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
 
