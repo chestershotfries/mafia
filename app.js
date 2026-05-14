@@ -1285,7 +1285,7 @@ function doManualSetup() {
 
 		$('#assignments-display').classList.add('hidden');
 		$('#retro-form').classList.add('hidden');
-		$('#darkstars-setup').classList.add('hidden');
+		$('#darkstars-setup')?.classList.add('hidden');
 		$('#manual-setup').classList.remove('hidden');
 
 		renderManualPlayerList(manualNames, 'manual-player-list', manualRoleMap, () => {
@@ -1334,7 +1334,7 @@ function doRetroEntry() {
 
 		$('#assignments-display').classList.add('hidden');
 		$('#manual-setup').classList.add('hidden');
-		$('#darkstars-setup').classList.add('hidden');
+		$('#darkstars-setup')?.classList.add('hidden');
 		$('#retro-form').classList.remove('hidden');
 
 		renderManualPlayerList(retroNames, 'retro-player-list', retroRoleMap, () => {
