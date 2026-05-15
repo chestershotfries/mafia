@@ -557,7 +557,7 @@ async function doRandomize() {
 		renderFormals(currentFormals, $('#formals-schedule'));
 		rollCount++;
 		$('#roll-count').textContent = rollCount;
-		$('#darkstars-setup').classList.add('hidden');
+		$('#darkstars-setup')?.classList.add('hidden');
 		$('#manual-setup').classList.add('hidden');
 		$('#retro-form').classList.add('hidden');
 		$('#assignments-display').classList.remove('hidden');
@@ -1681,7 +1681,7 @@ function newGame() {
 	$('#assignments-display').classList.add('hidden');
 	$('#manual-setup').classList.add('hidden');
 	$('#retro-form').classList.add('hidden');
-	$('#darkstars-setup').classList.add('hidden');
+	$('#darkstars-setup')?.classList.add('hidden');
 	$('#btn-continue-record').textContent = 'Continue to Record';
 	$('#nights-container').innerHTML = '';
 	countNames();
