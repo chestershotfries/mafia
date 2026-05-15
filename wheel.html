@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Wheel</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #1a1a1a;
+      --surface: #2d2d2d;
+      --text: #e8e8e8;
+      --text-muted: #999;
+      --accent: #c41e3a;
+      --accent-hover: #a8162f;
+      --slice-zero: #c41e3a;
+      --slice-one-a: #5b9bd5;
+      --slice-one-b: #4a9d6f;
+      --border: #4a4a4a;
+    }
+
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+
+    body {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+      gap: 1rem;
+      user-select: none;
+    }
+
+    h1 {
+      font-size: 2rem;
+      letter-spacing: 0.05em;
+      font-weight: 800;
+    }
+
+    .wheel-stage {
+      position: relative;
+      width: min(80vw, 80vh, 480px);
+      aspect-ratio: 1;
+    }
+
+    .pointer {
+      position: absolute;
+      top: -8px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 0;
+      height: 0;
+      border-left: 18px solid transparent;
+      border-right: 18px solid transparent;
+      border-top: 32px solid var(--text);
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
+      z-index: 2;
+    }
+
+    .wheel {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      border: 6px solid var(--border);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.4), inset 0 0 0 4px var(--bg);
+      transition: transform 5s cubic-bezier(0.17, 0.67, 0.18, 1);
+      position: relative;
+    }
+
+    .wheel-label {
+      position: absolute;
+      font-size: clamp(2rem, 7vw, 3.5rem);
+      font-weight: 800;
+      color: rgba(255,255,255,0.95);
+      text-shadow: 0 2px 6px rgba(0,0,0,0.5);
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+      line-height: 1;
+    }
+
+    .hub {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 14%;
+      height: 14%;
+      transform: translate(-50%, -50%);
+      border-radius: 50%;
+      background: var(--surface);
+      border: 4px solid var(--border);
+      box-shadow: 0 2px 6px rgba(0,0,0,0.5);
+      z-index: 1;
+    }
+
+    .controls {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.75rem;
+      margin-top: 0.5rem;
+    }
+
+    .btn {
+      font: inherit;
+      font-size: 1.25rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      padding: 0.85rem 2.5rem;
+      border: none;
+      border-radius: 10px;
+      background: var(--accent);
+      color: var(--text);
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      transition: background 0.2s;
+    }
+
+    .btn:hover:not(:disabled) { background: var(--accent-hover); }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .result {
+      font-size: 1.1rem;
+      color: var(--text-muted);
+      min-height: 1.5em;
+    }
+
+    .result strong {
+      color: var(--text);
+      font-size: 1.4rem;
+    }
+  </style>
+</head>
+<body>
+  <h1 id="title">RNG</h1>
+
+  <div class="wheel-stage">
+    <div class="pointer"></div>
+    <div class="wheel" id="wheel"></div>
+    <div class="hub"></div>
+  </div>
+
+  <div class="controls">
+    <button id="spin-btn" class="btn">SPIN</button>
+    <div class="result" id="result"></div>
+  </div>
+
+  <script>
+    const params = new URLSearchParams(location.search);
+    const day = parseInt(params.get('day') || '0', 10);
+    const rng = parseInt(params.get('rng') || '1', 10) === 2 ? 2 : 1;
+
+    const titleText = `RNG ${rng}`;
+    document.getElementById('title').textContent = titleText;
+    document.title = titleText;
+
+    // Slice config per rng mode
+    const config = rng === 2
+      ? {
+          // 2 slices, 180° each, starting at -90° so slice 0 is the top half
+          fromAngle: -90,
+          slices: [
+            { value: 0, color: 'var(--slice-zero)' },
+            { value: 1, color: 'var(--slice-one-a)' },
+          ],
+          // label positions for top-half and bottom-half slices
+          labels: [
+            { top: '20%', left: '50%' },
+            { top: '80%', left: '50%' },
+          ],
+        }
+      : {
+          // 3 slices, 120° each, starting at -60° so slice 0 is centered at top
+          fromAngle: -60,
+          slices: [
+            { value: 0, color: 'var(--slice-zero)' },
+            { value: 1, color: 'var(--slice-one-a)' },
+            { value: 1, color: 'var(--slice-one-b)' },
+          ],
+          labels: [
+            { top: '18%', left: '50%' },
+            { top: '68%', left: '80%' },
+            { top: '68%', left: '20%' },
+          ],
+        };
+
+    const wheel = document.getElementById('wheel');
+    const sliceCount = config.slices.length;
+    const sliceDeg = 360 / sliceCount;
+
+    // Build conic gradient
+    const stops = config.slices
+      .map((s, i) => `${s.color} ${i * sliceDeg}deg ${(i + 1) * sliceDeg}deg`)
+      .join(', ');
+    wheel.style.background = `conic-gradient(from ${config.fromAngle}deg, ${stops})`;
+
+    // Place labels
+    config.slices.forEach((s, i) => {
+      const label = document.createElement('div');
+      label.className = 'wheel-label';
+      label.textContent = s.value;
+      label.style.top = config.labels[i].top;
+      label.style.left = config.labels[i].left;
+      wheel.appendChild(label);
+    });
+
+    const spinBtn = document.getElementById('spin-btn');
+    const resultEl = document.getElementById('result');
+    const channel = new BroadcastChannel('mafia-wheel');
+
+    let currentRotation = 0;
+    let spinning = false;
+    let spun = false;
+
+    function pickSlice() {
+      return crypto.getRandomValues(new Uint32Array(1))[0] % sliceCount;
+    }
+
+    function spin() {
+      if (spinning || spun) return;
+      spinning = true;
+      spinBtn.disabled = true;
+      resultEl.textContent = '';
+
+      const sliceIdx = pickSlice();
+      const count = config.slices[sliceIdx].value;
+      const turns = 6 + Math.floor(Math.random() * 3);
+      // Jitter must stay within slice (half-slice minus a margin)
+      const maxJitter = (sliceDeg / 2) - 8;
+      const jitter = (Math.random() * 2 - 1) * maxJitter;
+      const targetDelta = (turns * 360) - (sliceIdx * sliceDeg) + jitter;
+      currentRotation += targetDelta;
+      wheel.style.transform = `rotate(${currentRotation}deg)`;
+
+      const onEnd = () => {
+        wheel.removeEventListener('transitionend', onEnd);
+        resultEl.innerHTML = `Result: <strong>${count}</strong>`;
+        channel.postMessage({ type: 'wheel-result', day, rng, count });
+        spinning = false;
+        spun = true;
+      };
+      wheel.addEventListener('transitionend', onEnd);
+    }
+
+    spinBtn.addEventListener('click', spin);
+
+    window.addEventListener('beforeunload', () => channel.close());
+  </script>
+</body>
+</html>

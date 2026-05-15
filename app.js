@@ -314,9 +314,171 @@ function buildAssignments(names, roleMap) {
 function randomizeFormals() {
 	const formals = [];
 	for (let day = 1; day <= 8; day++) {
-		formals.push({ day, count: Math.floor(nextRandom() * 3) });
+		formals.push({ day, rng1: null, rng2: null });
 	}
 	return formals;
+}
+
+// --- Wheel popout (live formal RNG spin) ---
+
+let wheelPopup = null;
+
+function wheelUrl(day, rng) {
+	const base = location.pathname.includes('/ego-mafia/') ? '../wheel.html' : './wheel.html';
+	return `${base}?day=${day}&rng=${rng}`;
+}
+
+function openWheelPopup(day, rng) {
+	const features = 'width=560,height=720,resizable=yes,scrollbars=no,menubar=no,toolbar=no,location=no,status=no';
+	wheelPopup = window.open(wheelUrl(day, rng), 'mafia-wheel', features);
+	if (!wheelPopup) {
+		showToast('Popup blocked — allow popups for this site to use the wheel.');
+		return;
+	}
+	wheelPopup.focus();
+}
+
+function normalizeFormals(formals) {
+	if (!Array.isArray(formals)) return formals;
+	for (const f of formals) {
+		if (!f) continue;
+		if (f.count != null && f.rng1 == null && f.rng2 == null) {
+			if (f.count <= 0) { f.rng1 = 0; f.rng2 = 0; }
+			else if (f.count === 1) { f.rng1 = 1; f.rng2 = 0; }
+			else { f.rng1 = 1; f.rng2 = 1; }
+		}
+		if (!('rng1' in f)) f.rng1 = null;
+		if (!('rng2' in f)) f.rng2 = null;
+	}
+	return formals;
+}
+
+function formalTotal(entry) {
+	if (!entry) return null;
+	if (entry.rng1 != null && entry.rng2 != null) return entry.rng1 + entry.rng2;
+	return null;
+}
+
+// Mirror of wheel slice models — uniform slice pick → mapped value.
+function rollFormalSlot(rng) {
+	const slices = rng === 2 ? [0, 1] : [0, 1, 1];
+	const idx = crypto.getRandomValues(new Uint32Array(1))[0] % slices.length;
+	return slices[idx];
+}
+
+function autorollFormals() {
+	if (!currentFormals) currentFormals = randomizeFormals();
+	for (const f of currentFormals) {
+		if (f.rng1 == null) f.rng1 = rollFormalSlot(1);
+		if (f.rng2 == null) f.rng2 = rollFormalSlot(2);
+	}
+	const formalsEl = document.getElementById('formals-schedule');
+	if (formalsEl) renderFormals(currentFormals, formalsEl);
+	const lockedEl = document.getElementById('locked-formals');
+	if (lockedEl && !lockedEl.classList.contains('hidden')) {
+		renderFormals(currentFormals, lockedEl);
+	}
+	for (let i = 0; i < currentFormals.length; i++) {
+		const wrap = document.querySelector(`.rngs-wrap[data-night="${i}"]`);
+		if (wrap) updateRngsWrap(wrap, currentFormals[i]);
+		const nd = nightActions.find((n) => n.night === i);
+		const total = formalTotal(currentFormals[i]);
+		if (nd && total != null) {
+			nd.rngs = total;
+			updateNightOutput(i);
+		}
+	}
+	saveState();
+}
+
+function autorollDay(idx) {
+	if (!currentFormals) currentFormals = randomizeFormals();
+	if (!currentFormals[idx]) currentFormals[idx] = { day: idx + 1, rng1: null, rng2: null };
+	const entry = currentFormals[idx];
+	if (entry.rng1 == null) entry.rng1 = rollFormalSlot(1);
+	if (entry.rng2 == null) entry.rng2 = rollFormalSlot(2);
+
+	const wrap = document.querySelector(`.rngs-wrap[data-night="${idx}"]`);
+	if (wrap) updateRngsWrap(wrap, entry);
+
+	const total = formalTotal(entry);
+	const nd = nightActions.find((n) => n.night === idx);
+	if (nd) {
+		nd.rngs = total != null ? total : '';
+		updateNightOutput(idx);
+	}
+
+	const formalsEl = document.getElementById('formals-schedule');
+	if (formalsEl) renderFormals(currentFormals, formalsEl);
+	const lockedEl = document.getElementById('locked-formals');
+	if (lockedEl && !lockedEl.classList.contains('hidden')) {
+		renderFormals(currentFormals, lockedEl);
+	}
+	saveState();
+}
+
+function applyWheelResult(day, rng, count) {
+	const idx = day - 1;
+	if (!currentFormals) currentFormals = randomizeFormals();
+	if (!currentFormals[idx]) currentFormals[idx] = { day, rng1: null, rng2: null };
+	const key = rng === 2 ? 'rng2' : 'rng1';
+	currentFormals[idx][key] = count;
+
+	const wrap = document.querySelector(`.rngs-wrap[data-night="${idx}"]`);
+	if (wrap) updateRngsWrap(wrap, currentFormals[idx]);
+
+	const total = formalTotal(currentFormals[idx]);
+	const nd = nightActions.find((n) => n.night === idx);
+	if (nd) {
+		nd.rngs = total != null ? total : '';
+		updateNightOutput(idx);
+	}
+
+	const formalsEl = document.getElementById('formals-schedule');
+	if (formalsEl) renderFormals(currentFormals, formalsEl);
+	const lockedEl = document.getElementById('locked-formals');
+	if (lockedEl && !lockedEl.classList.contains('hidden')) {
+		renderFormals(currentFormals, lockedEl);
+	}
+
+	saveState();
+}
+
+function updateRngsWrap(wrap, entry) {
+	for (const rng of [1, 2]) {
+		const key = rng === 2 ? 'rng2' : 'rng1';
+		const slot = wrap.querySelector(`.rng-slot[data-rng="${rng}"]`);
+		if (!slot) continue;
+		const valEl = slot.querySelector('.rng-value');
+		const btn = slot.querySelector('.spin-wheel-btn');
+		const val = entry ? entry[key] : null;
+		if (val != null) {
+			if (valEl) valEl.textContent = val;
+			if (btn) btn.classList.add('hidden');
+		} else {
+			if (valEl) valEl.textContent = '?';
+			if (btn) btn.classList.remove('hidden');
+		}
+	}
+	const totalEl = wrap.querySelector('.rngs-total');
+	const total = formalTotal(entry);
+	if (totalEl) totalEl.textContent = total != null ? total : '?';
+	const autoBtn = wrap.querySelector('.autoroll-day-btn');
+	if (autoBtn) {
+		const allSpun = entry && entry.rng1 != null && entry.rng2 != null;
+		autoBtn.classList.toggle('hidden', !!allSpun);
+	}
+}
+
+if (typeof BroadcastChannel !== 'undefined') {
+	const wheelChannel = new BroadcastChannel('mafia-wheel');
+	wheelChannel.addEventListener('message', (e) => {
+		if (!e.data || e.data.type !== 'wheel-result') return;
+		const { day, rng, count } = e.data;
+		if (typeof day === 'number' && typeof rng === 'number' && typeof count === 'number') {
+			applyWheelResult(day, rng, count);
+		}
+	});
 }
 
 // --- Render assignments ---
@@ -366,7 +528,13 @@ function renderFormals(formals, el) {
 		label.textContent = `Day ${f.day}`;
 		const value = document.createElement('span');
 		value.className = 'formal-count';
-		value.textContent = f.count;
+		const total = formalTotal(f);
+		if (total == null) {
+			value.textContent = '?';
+			value.classList.add('formal-pending');
+		} else {
+			value.textContent = total;
+		}
 		div.appendChild(label);
 		div.appendChild(value);
 		el.appendChild(div);
@@ -2417,21 +2585,76 @@ function addNightSection(nightNum) {
 
 	section.appendChild(vigiWrapper);
 
-	// RNGs (predetermined from formals)
-	const rngsCount = currentFormals && currentFormals[nightNum]
-		? currentFormals[nightNum].count
-		: 0;
-	nightData.rngs = rngsCount;
+	// RNGs (spun live via wheel popout — two slots per day)
+	const formalEntry = currentFormals && currentFormals[nightNum];
+	const total = formalTotal(formalEntry);
+	nightData.rngs = total != null ? total : '';
 
 	const rngsLabel = document.createElement('label');
 	rngsLabel.className = 'night-label';
 	rngsLabel.textContent = 'RNGs';
 	section.appendChild(rngsLabel);
 
-	const rngsValue = document.createElement('span');
-	rngsValue.className = 'night-rngs';
-	rngsValue.textContent = rngsCount;
-	section.appendChild(rngsValue);
+	const rngsWrap = document.createElement('div');
+	rngsWrap.className = 'rngs-wrap';
+	rngsWrap.dataset.night = nightNum;
+
+	for (const rng of [1, 2]) {
+		const key = rng === 2 ? 'rng2' : 'rng1';
+		const val = formalEntry ? formalEntry[key] : null;
+
+		const slot = document.createElement('div');
+		slot.className = 'rng-slot';
+		slot.dataset.rng = rng;
+
+		const slotLabel = document.createElement('span');
+		slotLabel.className = 'rng-slot-label';
+		slotLabel.textContent = `RNG ${rng}`;
+		slot.appendChild(slotLabel);
+
+		const valEl = document.createElement('span');
+		valEl.className = 'rng-value';
+		valEl.textContent = val != null ? val : '?';
+		slot.appendChild(valEl);
+
+		const spinBtn = document.createElement('button');
+		spinBtn.type = 'button';
+		spinBtn.className = 'btn btn-secondary btn-sm spin-wheel-btn';
+		spinBtn.textContent = 'Spin';
+		if (val != null) spinBtn.classList.add('hidden');
+		spinBtn.addEventListener('click', () => openWheelPopup(nightNum + 1, rng));
+		slot.appendChild(spinBtn);
+
+		rngsWrap.appendChild(slot);
+
+		if (rng === 1) {
+			const plus = document.createElement('span');
+			plus.className = 'rng-sep';
+			plus.textContent = '+';
+			rngsWrap.appendChild(plus);
+		}
+	}
+
+	const equals = document.createElement('span');
+	equals.className = 'rng-sep';
+	equals.textContent = '=';
+	rngsWrap.appendChild(equals);
+
+	const totalEl = document.createElement('span');
+	totalEl.className = 'rngs-total';
+	totalEl.textContent = total != null ? total : '?';
+	rngsWrap.appendChild(totalEl);
+
+	const autoBtn = document.createElement('button');
+	autoBtn.type = 'button';
+	autoBtn.className = 'btn btn-secondary btn-sm autoroll-day-btn';
+	autoBtn.textContent = 'Auto';
+	autoBtn.title = 'Auto-roll both RNG slots for this day';
+	if (total != null) autoBtn.classList.add('hidden');
+	autoBtn.addEventListener('click', () => autorollDay(nightNum));
+	rngsWrap.appendChild(autoBtn);
+
+	section.appendChild(rngsWrap);
 
 	// Discord output block
 	const outputBlock = document.createElement('div');
@@ -3231,7 +3454,7 @@ async function restoreState() {
 		if (!state.currentAssignments) return false;
 
 		currentAssignments = state.currentAssignments;
-		currentFormals = state.currentFormals;
+		currentFormals = normalizeFormals(state.currentFormals);
 		vigiHasShot = state.vigiHasShot || false;
 		rollCount = state.rollCount || 0;
 
@@ -3280,6 +3503,7 @@ document.addEventListener('DOMContentLoaded', () => {
 	$('#btn-randomize').addEventListener('click', doRandomize);
 	$('#btn-reroll').addEventListener('click', doRandomize);
 	$('#btn-accept').addEventListener('click', acceptAssignments);
+	$('#btn-autoroll')?.addEventListener('click', autorollFormals);
 	$('#btn-dice').addEventListener('click', async () => {
 		const max = parseInt($('#dice-max').value) || 20;
 		$('#btn-dice').disabled = true;

@@ -686,6 +686,17 @@ textarea:focus {
 	min-width: 2ch;
 }
 
+.formals-header {
+	display: flex;
+	justify-content: flex-start;
+	align-items: center;
+	gap: 0.75rem;
+}
+
+.formals-header h3 {
+	margin-bottom: 0;
+}
+
 .formals-grid {
 	display: grid;
 	grid-template-columns: repeat(4, 1fr);
@@ -868,14 +879,65 @@ textarea:focus {
 	cursor: not-allowed;
 }
 
-.night-rngs {
-	display: block;
-	padding: 0.5rem;
+.rngs-wrap {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	flex-wrap: wrap;
+}
+
+.rng-slot {
+	display: flex;
+	align-items: center;
+	gap: 0.4rem;
+	padding: 0.4rem 0.6rem;
 	background: var(--surface);
 	border: 1px solid var(--border);
 	border-radius: 4px;
-	font-size: 0.95rem;
+}
+
+.rng-slot-label {
+	font-size: 0.8rem;
 	color: var(--text-muted);
+	font-weight: 600;
+}
+
+.rng-value {
+	display: inline-block;
+	min-width: 1.5ch;
+	text-align: center;
+	font-weight: 700;
+	color: var(--town-blue);
+}
+
+.rng-sep {
+	color: var(--text-muted);
+	font-weight: 600;
+	padding: 0 0.25rem;
+}
+
+.rngs-total {
+	display: inline-block;
+	min-width: 1.5ch;
+	text-align: center;
+	font-size: 1.1rem;
+	font-weight: 800;
+	color: var(--text);
+}
+
+.spin-wheel-btn,
+.autoroll-day-btn {
+	font-size: 0.85rem;
+	padding: 0.35rem 0.7rem;
+}
+
+.autoroll-day-btn {
+	margin-left: 0.5rem;
+}
+
+.formal-pending {
+	color: var(--text-muted) !important;
+	opacity: 0.6;
 }
 
 /* Cop result badge */
