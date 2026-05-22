@@ -442,9 +442,16 @@ def record_game(body):
 
     for a in sorted(assignments, key=lambda x: x["position"]):
         name = a["name"]
-        alignment = a["role"]
         is_ghost = a.get("is_ghost", False)
         is_n0 = name in night0_kills
+        # The Alignment column stores the seat's specific role (Cop/Medic/
+        # Vigilante) for real players so the power role is preserved in the
+        # last-recorded-game and match-history views. Team assignment and
+        # win/loss still key off Mafia-vs-not, so ratings are unaffected.
+        # Ghost-occupied power seats keep their team alignment (no phantom role).
+        alignment = a["role"]
+        if not is_ghost:
+            alignment = POSITION_ROLES.get(a["position"], alignment)
 
         if is_ghost:
             history_rows.append(
