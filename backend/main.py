@@ -49,7 +49,6 @@ NAME_ALIASES = {
     "Smittball": "Smit",
     "Brown Kow": "Brownkow",
     "Striker": "Strik3r",
-    "Decode": "Matt (Decode)",
 }
 
 POSITION_ROLES = {
@@ -112,7 +111,10 @@ def _flush_storage():
 
 
 # gspread and json_store each raise their own WorksheetNotFound. Catch either uniformly.
-_WORKSHEET_NOT_FOUND = (gspread.exceptions.WorksheetNotFound, json_store.WorksheetNotFound)
+_WORKSHEET_NOT_FOUND = (
+    gspread.exceptions.WorksheetNotFound,
+    json_store.WorksheetNotFound,
+)
 
 
 # --- Rating helpers ---
@@ -196,23 +198,56 @@ def format_stats_summary(ss, ws, last_row):
     requests = []
 
     # Remove existing banded ranges on this sheet
-    meta = ss.fetch_sheet_metadata(params={
-        "fields": "sheets(properties.sheetId,bandedRanges)"
-    })
+    meta = ss.fetch_sheet_metadata(
+        params={"fields": "sheets(properties.sheetId,bandedRanges)"}
+    )
     for sheet in meta.get("sheets", []):
         if sheet["properties"]["sheetId"] == sheet_id:
             for banding in sheet.get("bandedRanges", []):
-                requests.append({
-                    "deleteBanding": {
-                        "bandedRangeId": banding["bandedRangeId"]
-                    }
-                })
+                requests.append(
+                    {"deleteBanding": {"bandedRangeId": banding["bandedRangeId"]}}
+                )
             break
 
     # Add banded range for alternating row colors
-    requests.append({
-        "addBanding": {
-            "bandedRange": {
+    requests.append(
+        {
+            "addBanding": {
+                "bandedRange": {
+                    "range": {
+                        "sheetId": sheet_id,
+                        "startRowIndex": 0,
+                        "endRowIndex": last_row,
+                        "startColumnIndex": 0,
+                        "endColumnIndex": 12,
+                    },
+                    "rowProperties": {
+                        "headerColor": {
+                            "red": 0.208,
+                            "green": 0.408,
+                            "blue": 0.329,
+                        },
+                        "firstBandColor": {
+                            "red": 1.0,
+                            "green": 1.0,
+                            "blue": 1.0,
+                        },
+                        "secondBandColor": {
+                            "red": 0.965,
+                            "green": 0.973,
+                            "blue": 0.976,
+                        },
+                    },
+                }
+            }
+        }
+    )
+
+    # Outer border around entire block
+    border = {"style": "SOLID", "color": {"red": 0.0, "green": 0.0, "blue": 0.0}}
+    requests.append(
+        {
+            "updateBorders": {
                 "range": {
                     "sheetId": sheet_id,
                     "startRowIndex": 0,
@@ -220,72 +255,51 @@ def format_stats_summary(ss, ws, last_row):
                     "startColumnIndex": 0,
                     "endColumnIndex": 12,
                 },
-                "rowProperties": {
-                    "headerColor": {
-                        "red": 0.208, "green": 0.408, "blue": 0.329,
-                    },
-                    "firstBandColor": {
-                        "red": 1.0, "green": 1.0, "blue": 1.0,
-                    },
-                    "secondBandColor": {
-                        "red": 0.965, "green": 0.973, "blue": 0.976,
-                    },
-                },
+                "top": border,
+                "bottom": border,
+                "left": border,
+                "right": border,
             }
         }
-    })
-
-    # Outer border around entire block
-    border = {"style": "SOLID", "color": {"red": 0.0, "green": 0.0, "blue": 0.0}}
-    requests.append({
-        "updateBorders": {
-            "range": {
-                "sheetId": sheet_id,
-                "startRowIndex": 0,
-                "endRowIndex": last_row,
-                "startColumnIndex": 0,
-                "endColumnIndex": 12,
-            },
-            "top": border,
-            "bottom": border,
-            "left": border,
-            "right": border,
-        }
-    })
+    )
 
     # Vertical borders on both sides of Rating column (L, index 11)
-    requests.append({
-        "updateBorders": {
-            "range": {
-                "sheetId": sheet_id,
-                "startRowIndex": 0,
-                "endRowIndex": last_row,
-                "startColumnIndex": 11,
-                "endColumnIndex": 12,
-            },
-            "left": border,
-            "right": border,
+    requests.append(
+        {
+            "updateBorders": {
+                "range": {
+                    "sheetId": sheet_id,
+                    "startRowIndex": 0,
+                    "endRowIndex": last_row,
+                    "startColumnIndex": 11,
+                    "endColumnIndex": 12,
+                },
+                "left": border,
+                "right": border,
+            }
         }
-    })
+    )
 
     # Vertically center all text
-    requests.append({
-        "repeatCell": {
-            "range": {
-                "sheetId": sheet_id,
-                "startRowIndex": 0,
-                "endRowIndex": last_row,
-                "startColumnIndex": 0,
-                "endColumnIndex": 12,
-            },
-            "cell": {
-                "userEnteredFormat": {
-                    "verticalAlignment": "MIDDLE",
-                }
-            },
-            "fields": "userEnteredFormat.verticalAlignment",
+    requests.append(
+        {
+            "repeatCell": {
+                "range": {
+                    "sheetId": sheet_id,
+                    "startRowIndex": 0,
+                    "endRowIndex": last_row,
+                    "startColumnIndex": 0,
+                    "endColumnIndex": 12,
+                },
+                "cell": {
+                    "userEnteredFormat": {
+                        "verticalAlignment": "MIDDLE",
+                    }
+                },
+                "fields": "userEnteredFormat.verticalAlignment",
+            }
         }
-    })
+    )
 
     ss.batch_update({"requests": requests})
 
@@ -803,18 +817,22 @@ def get_match_history():
             "rate_change": int(float(r[4])) if r[4] else 0,
         }
         if r[5]:
-            entry.update({
-                "old_mu": float(r[5]),
-                "new_mu": float(r[6]),
-                "new_sigma": float(r[7]),
-                "old_rating": int(float(r[8])),
-                "new_rating": int(float(r[9])),
-                "old_sigma": float(r[10]),
-            })
+            entry.update(
+                {
+                    "old_mu": float(r[5]),
+                    "new_mu": float(r[6]),
+                    "new_sigma": float(r[7]),
+                    "old_rating": int(float(r[8])),
+                    "new_rating": int(float(r[9])),
+                    "old_sigma": float(r[10]),
+                }
+            )
         g["players"].append(entry)
         if g["winner"] is None and result in ("Win", "Loss"):
             align = "Mafia" if role == "Mafia" else "Town"
-            g["winner"] = align if result == "Win" else ("Town" if align == "Mafia" else "Mafia")
+            g["winner"] = (
+                align if result == "Win" else ("Town" if align == "Mafia" else "Mafia")
+            )
     return {"games": [games[gid] for gid in order]}
 
 
