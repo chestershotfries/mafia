@@ -26,13 +26,21 @@ async function api(action, data = {}) {
 	return result;
 }
 
+function roleAlignmentClass(role) {
+	if (role === 'Mafia') return 'align-mafia';
+	if (role === 'Cop') return 'role-cop';
+	if (role === 'Medic') return 'role-medic';
+	if (role === 'Vigilante') return 'role-vig';
+	return 'align-town';
+}
+
 function buildHistoryMap(games) {
 	const history = {};
 	for (const g of games || []) {
 		for (const p of g.players || []) {
 			const entry = {
 				game_id: g.game_id,
-				alignment: p.alignment || (p.role === 'Mafia' ? 'Mafia' : 'Town'),
+				alignment: p.role || p.alignment || 'Town',
 				result: p.result,
 				rate_change: p.rate_change,
 			};
@@ -62,6 +70,9 @@ async function loadStats() {
 			const resp = await fetch('./data.json', { cache: 'no-cache' });
 			if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
 			statsData = await resp.json();
+			if (statsData.games) {
+				statsData.history = buildHistoryMap(statsData.games);
+			}
 		}
 		renderStatsSummary(statsData.game_summary);
 		renderLeaderboard(statsData.players);
@@ -163,7 +174,7 @@ function showPlayerDetail(playerName) {
 	const games = (statsData.history[playerName] || []);
 	for (const g of games) {
 		const tr = document.createElement('tr');
-		const alignClass = g.alignment === 'Mafia' ? 'align-mafia' : 'align-town';
+		const alignClass = roleAlignmentClass(g.alignment);
 		const isExcluded = g.result === 'Ghost' || g.result === 'Night Zero';
 		const ratingDisplay = g.old_rating !== undefined
 			? `${g.old_rating} → ${g.new_rating}`
