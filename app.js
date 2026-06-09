@@ -1857,25 +1857,12 @@ function computeNightResolution(nd) {
 	return { deaths, saved };
 }
 
-function roleLabelFor(name) {
-	const a = currentAssignments.find((x) => x.name === name);
-	return a ? a.role : '';
-}
-
-// Mod-facing readout of the night's outcome: who died (with role) and who a
-// medic save kept alive.
+// Mod-facing readout of the night's outcome: who died and who a medic save
+// kept alive. Alignment is intentionally omitted.
 function generateDeathReadout(nd) {
 	const { deaths, saved } = computeNightResolution(nd);
 	let out = `Night ${nd.night} — `;
-	if (!deaths.length) {
-		out += 'no one died.';
-	} else {
-		const list = deaths.map((n) => {
-			const r = roleLabelFor(n);
-			return r ? `${n} (${r})` : n;
-		});
-		out += `${list.join(', ')} died.`;
-	}
+	out += deaths.length ? `${deaths.join(', ')} died.` : 'no one died.';
 	if (saved.length) out += `\nSaved: ${saved.join(', ')}`;
 	return out;
 }
