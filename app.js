@@ -1828,6 +1828,58 @@ function generateNightOutput(nightData) {
 	return output.trimEnd();
 }
 
+// Resolve who actually dies this night, after kills and medic saves settle.
+// Returns the newly-dead names plus any save that successfully blocked a kill.
+function computeNightResolution(nd) {
+	const before = getDeadBeforeNight(nd.night);
+	const killCounts = {};
+	const addKill = (name) => {
+		if (name && !before.has(name)) killCounts[name] = (killCounts[name] || 0) + 1;
+	};
+	for (const kill of nd.mafKills) addKill(kill);
+	addKill(nd.vigiTarget);
+	if (nd.darkStars && nd.darkStars.splitVigiTarget) addKill(nd.darkStars.splitVigiTarget);
+
+	const saved = [];
+	const applySave = (name) => {
+		if (name && killCounts[name] > 0) {
+			killCounts[name]--;
+			if (killCounts[name] === 0) saved.push(name);
+		}
+	};
+	if (nd.darkStars) {
+		for (const s of [nd.darkStars.nerfedMedicA, nd.darkStars.nerfedMedicB].filter(Boolean)) applySave(s);
+	} else {
+		applySave(nd.medicSave);
+	}
+
+	const deaths = Object.entries(killCounts).filter(([, c]) => c > 0).map(([name]) => name);
+	return { deaths, saved };
+}
+
+function roleLabelFor(name) {
+	const a = currentAssignments.find((x) => x.name === name);
+	return a ? a.role : '';
+}
+
+// Mod-facing readout of the night's outcome: who died (with role) and who a
+// medic save kept alive.
+function generateDeathReadout(nd) {
+	const { deaths, saved } = computeNightResolution(nd);
+	let out = `Night ${nd.night} — `;
+	if (!deaths.length) {
+		out += 'no one died.';
+	} else {
+		const list = deaths.map((n) => {
+			const r = roleLabelFor(n);
+			return r ? `${n} (${r})` : n;
+		});
+		out += `${list.join(', ')} died.`;
+	}
+	if (saved.length) out += `\nSaved: ${saved.join(', ')}`;
+	return out;
+}
+
 function updateNightOutput(nightNum) {
 	const nightData = nightActions.find((n) => n.night === nightNum);
 	if (!nightData) return;
@@ -1838,6 +1890,9 @@ function updateNightOutput(nightNum) {
 			? generateDarkStarsNightOutput(nightData)
 			: generateNightOutput(nightData);
 	}
+
+	const deathPre = $(`#night-deaths-${nightNum}`);
+	if (deathPre) deathPre.textContent = generateDeathReadout(nightData);
 }
 
 function handleCopyClick(e) {
@@ -2743,6 +2798,32 @@ function addNightSection(nightNum) {
 	outputBlock.appendChild(outputPre);
 
 	section.appendChild(outputBlock);
+
+	// Mod-facing death readout — who actually dies once the night settles
+	const deathBlock = document.createElement('div');
+	deathBlock.className = 'discord-block death-block';
+
+	const deathHeader = document.createElement('div');
+	deathHeader.className = 'discord-header';
+
+	const deathTitle = document.createElement('span');
+	deathTitle.textContent = `Night ${nightNum} Deaths (mod)`;
+	deathHeader.appendChild(deathTitle);
+
+	const deathCopyBtn = document.createElement('button');
+	deathCopyBtn.className = 'btn-copy';
+	deathCopyBtn.dataset.target = `night-deaths-${nightNum}`;
+	deathCopyBtn.textContent = 'Copy';
+	deathHeader.appendChild(deathCopyBtn);
+
+	deathBlock.appendChild(deathHeader);
+
+	const deathPre = document.createElement('pre');
+	deathPre.className = 'discord-pre';
+	deathPre.id = `night-deaths-${nightNum}`;
+	deathBlock.appendChild(deathPre);
+
+	section.appendChild(deathBlock);
 
 	$('#nights-container').appendChild(section);
 	refreshConstraints();

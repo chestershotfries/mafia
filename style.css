@@ -742,6 +742,15 @@ textarea:focus {
 	color: var(--text-muted);
 }
 
+/* Mod-facing death readout — distinguished from the player-facing output */
+.death-block {
+	border: 1px solid var(--accent);
+}
+
+.death-block .discord-header {
+	color: var(--text);
+}
+
 .discord-pre {
 	padding: 0.75rem;
 	margin: 0;
