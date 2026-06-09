@@ -1857,14 +1857,11 @@ function computeNightResolution(nd) {
 	return { deaths, saved };
 }
 
-// Mod-facing readout of the night's outcome: who died and who a medic save
-// kept alive. Alignment is intentionally omitted.
+// Mod-facing readout of the night's outcome: only who died. Alignment and
+// medic saves are intentionally omitted.
 function generateDeathReadout(nd) {
-	const { deaths, saved } = computeNightResolution(nd);
-	let out = `Night ${nd.night} — `;
-	out += deaths.length ? `${deaths.join(', ')} died.` : 'no one died.';
-	if (saved.length) out += `\nSaved: ${saved.join(', ')}`;
-	return out;
+	const { deaths } = computeNightResolution(nd);
+	return `Night ${nd.night} — ` + (deaths.length ? `${deaths.join(', ')} died.` : 'no one died.');
 }
 
 function updateNightOutput(nightNum) {
