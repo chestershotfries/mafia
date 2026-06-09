@@ -1857,11 +1857,20 @@ function computeNightResolution(nd) {
 	return { deaths, saved };
 }
 
-// Mod-facing readout of the night's outcome: only who died. Alignment and
-// medic saves are intentionally omitted.
+function shuffled(arr) {
+	const a = [...arr];
+	for (let i = a.length - 1; i > 0; i--) {
+		const j = Math.floor(Math.random() * (i + 1));
+		[a[i], a[j]] = [a[j], a[i]];
+	}
+	return a;
+}
+
+// Mod-facing readout of the night's outcome: only who died, in random order so
+// the order doesn't leak anything. Alignment and medic saves are omitted.
 function generateDeathReadout(nd) {
 	const { deaths } = computeNightResolution(nd);
-	return `Night ${nd.night} — ` + (deaths.length ? `${deaths.join(', ')} died.` : 'no one died.');
+	return `Night ${nd.night} — ` + (deaths.length ? `${shuffled(deaths).join(', ')} died.` : 'no one died.');
 }
 
 function updateNightOutput(nightNum) {
