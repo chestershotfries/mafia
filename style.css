@@ -879,6 +879,11 @@ textarea:focus {
 	cursor: not-allowed;
 }
 
+.night-select.action-required {
+	border-color: var(--danger, #e05260);
+	box-shadow: 0 0 0 1px var(--danger, #e05260);
+}
+
 .rngs-wrap {
 	display: flex;
 	align-items: center;

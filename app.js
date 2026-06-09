@@ -1889,6 +1889,11 @@ function updateNightButtons() {
 				if (gameMode === 'darkstars') {
 					addDarkStarsNightSection(i);
 				} else {
+					const problems = findIncompleteNights();
+					if (problems.length) {
+						showToast(incompleteNightsMessage(problems));
+						return;
+					}
 					addNightSection(i);
 				}
 				updateNightButtons();
@@ -2212,6 +2217,62 @@ function refreshDarkStarsConstraints() {
 	saveState();
 }
 
+// A night action is compulsory when its select can actually be used: the role
+// holder is alive (select enabled), the action is available this night (wrapper
+// not hidden), and at least one valid target exists.
+function isActionRequired(sel, wrap) {
+	if (!sel || sel.disabled) return false;
+	if (wrap && wrap.classList.contains('hidden')) return false;
+	return [...sel.options].some((o) => o.value !== '' && !o.disabled);
+}
+
+// Mafia kill, cop check and medic save are compulsory whenever available.
+// Vigilante is the only optional night action.
+function findIncompleteNights() {
+	const problems = [];
+	for (const nd of nightActions) {
+		const n = nd.night;
+		const missing = [];
+
+		const mafSel1 = $(`.maf-select[data-night="${n}"][data-kill="0"]`);
+		if (isActionRequired(mafSel1, $(`.maf-kill-1-wrapper[data-night="${n}"]`)) && !nd.mafKills[0]) {
+			missing.push('Mafia Kill');
+		}
+		const copSel = $(`.cop-select[data-night="${n}"]`);
+		if (isActionRequired(copSel, null) && !nd.copCheck) {
+			missing.push('Cop Check');
+		}
+		const medicSel = $(`.medic-select[data-night="${n}"]`);
+		if (isActionRequired(medicSel, $(`.medic-wrapper[data-night="${n}"]`)) && !nd.medicSave) {
+			missing.push('Medic Save');
+		}
+
+		if (missing.length) problems.push({ night: n, missing });
+	}
+	return problems;
+}
+
+function incompleteNightsMessage(problems) {
+	const parts = problems.map((p) => `N${p.night}: ${p.missing.join(', ')}`);
+	return `Night actions required — ${parts.join('; ')}`;
+}
+
+// Highlight compulsory selects that are still empty so it is obvious what to fill.
+function markRequiredActions() {
+	for (const nd of nightActions) {
+		const n = nd.night;
+		const fields = [
+			{ sel: $(`.maf-select[data-night="${n}"][data-kill="0"]`), wrap: $(`.maf-kill-1-wrapper[data-night="${n}"]`), val: nd.mafKills[0] },
+			{ sel: $(`.cop-select[data-night="${n}"]`), wrap: null, val: nd.copCheck },
+			{ sel: $(`.medic-select[data-night="${n}"]`), wrap: $(`.medic-wrapper[data-night="${n}"]`), val: nd.medicSave },
+		];
+		for (const f of fields) {
+			if (!f.sel) continue;
+			f.sel.classList.toggle('action-required', isActionRequired(f.sel, f.wrap) && !f.val);
+		}
+	}
+}
+
 function refreshConstraints() {
 	if (gameMode === 'darkstars') return refreshDarkStarsConstraints();
 	const cop = currentAssignments.find((a) => a.position === 4);
@@ -2398,6 +2459,7 @@ function refreshConstraints() {
 	recalculateCopResults(0);
 	updateWinIndicator();
 	updateNightButtons();
+	markRequiredActions();
 	saveState();
 }
 
@@ -3189,6 +3251,11 @@ async function continueToRecord() {
 		if (await confirmAction(`End Dark Stars game?<br><br>${winText}<br>This game will not be recorded.`)) {
 			newGame();
 		}
+		return;
+	}
+	const problems = findIncompleteNights();
+	if (problems.length) {
+		showToast(incompleteNightsMessage(problems));
 		return;
 	}
 	renderEditableAssignments();
