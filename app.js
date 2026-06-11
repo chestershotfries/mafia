@@ -1429,6 +1429,67 @@ function updateRatedPreview() {
 
 	const winner = document.querySelector('input[name="winner"]:checked');
 	$('#btn-submit').disabled = !winner;
+
+	renderResultsExport();
+}
+
+// Tab-separated name/role/result table for pasting into an external
+// spreadsheet. Built lazily into the record panel and refreshed whenever the
+// preview updates (winner change, name edit, etc.). Ghosts are excluded.
+function renderResultsExport() {
+	const panel = $('#panel-record');
+	if (!panel || !currentAssignments) return;
+
+	let pre = $('#results-export');
+	if (!pre) {
+		const block = document.createElement('div');
+		block.className = 'discord-block';
+
+		const header = document.createElement('div');
+		header.className = 'discord-header';
+
+		const title = document.createElement('span');
+		title.textContent = 'Results Export (spreadsheet)';
+		header.appendChild(title);
+
+		const copyBtn = document.createElement('button');
+		copyBtn.className = 'btn-copy';
+		copyBtn.dataset.target = 'results-export';
+		copyBtn.textContent = 'Copy';
+		header.appendChild(copyBtn);
+
+		block.appendChild(header);
+
+		pre = document.createElement('pre');
+		pre.className = 'discord-pre';
+		pre.id = 'results-export';
+		block.appendChild(pre);
+
+		panel.insertBefore(block, panel.querySelector('.button-row'));
+	}
+
+	const winnerEl = document.querySelector('input[name="winner"]:checked');
+	const winner = winnerEl ? winnerEl.value : null;
+
+	const rows = currentAssignments
+		.filter((a) => !a.is_ghost)
+		.map((a) => {
+			const side = a.role === 'Mafia' ? 'Mafia' : 'Town';
+			const result = winner ? (side === winner ? 'Win' : 'Loss') : '';
+			return `${a.name}\t${powerRoleLabel(a)}\t${result}`;
+		});
+
+	pre.textContent = ['Name\tRole\tResult', ...rows].join('\n');
+}
+
+// Power roles are positional (4=Cop, 5=Medic, 6=Vigilante); the `role` field
+// only stores Mafia/Town.
+function powerRoleLabel(a) {
+	if (a.role === 'Mafia') return 'Mafia';
+	if (a.position === 4) return 'Cop';
+	if (a.position === 5) return 'Medic';
+	if (a.position === 6) return 'Vigilante';
+	return 'Town';
 }
 
 // --- Confirmation dialog ---
